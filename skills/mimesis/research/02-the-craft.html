@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>humanise · 02 · The Craft</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..900;1,9..144,400..700&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#f6f2e9;--paper-2:#efe9da;--ink:#1b1a16;--ink-soft:#56524a;
+    --rule:#ddd5c2;--red:#b23a2e;--red-soft:#f1ddd8;--green:#3f6b3f;--max:46rem;
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--paper);color:var(--ink);
+    font-family:"Newsreader",Georgia,serif;font-size:1.18rem;line-height:1.62;font-optical-sizing:auto}
+  .wrap{max-width:var(--max);margin:0 auto;padding:clamp(1.4rem,4vw,4rem) clamp(1.2rem,5vw,2rem) 8rem}
+  .top{display:flex;justify-content:space-between;align-items:baseline;
+    font-family:"JetBrains Mono",monospace;font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--ink-soft);border-bottom:1px solid var(--rule);padding-bottom:.8rem;margin-bottom:3.2rem}
+  .top b{color:var(--red);font-weight:500}
+  .mast{margin-bottom:3.4rem}
+  .kicker{font-family:"JetBrains Mono",monospace;font-size:.74rem;letter-spacing:.22em;
+    text-transform:uppercase;color:var(--red);margin:0 0 1rem}
+  h1{font-family:"Fraunces",serif;font-weight:600;font-size:clamp(2.7rem,9vw,4.6rem);
+    line-height:.98;letter-spacing:-.02em;margin:0 0 1.1rem}
+  h1 em{font-style:italic;font-weight:400}
+  .standfirst{font-size:1.32rem;color:var(--ink-soft);max-width:35rem;margin:0;font-variation-settings:"opsz" 30}
+  section{margin-top:3.6rem}
+  .num{font-family:"Fraunces",serif;font-weight:300;font-size:1rem;color:var(--red);
+    letter-spacing:.05em;display:block;margin-bottom:.3rem}
+  h2{font-family:"Fraunces",serif;font-weight:600;font-size:clamp(1.7rem,5vw,2.3rem);
+    line-height:1.05;letter-spacing:-.01em;margin:.1rem 0 .9rem}
+  .principle h2{margin-bottom:.4rem}
+  .tagline{font-style:italic;color:var(--red);margin:0 0 1rem;font-size:1.12rem}
+  h3{font-family:"Newsreader",serif;font-weight:600;font-size:1.16rem;margin:1.8rem 0 .4rem}
+  p{margin:0 0 1.05rem}
+  .lead{font-size:1.24rem}
+  a{color:var(--red);text-underline-offset:3px}
+  .eg{border-top:1px solid var(--rule);border-bottom:1px solid var(--rule);margin:1.4rem 0;padding:.4rem 0}
+  .eg .row{display:flex;gap:.8rem;padding:.7rem 0;align-items:flex-start}
+  .eg .row+.row{border-top:1px dashed var(--rule)}
+  .eg .mk{font-family:"JetBrains Mono",monospace;font-size:.9rem;font-weight:500;flex:0 0 1.3rem;line-height:1.5}
+  .eg .ai .mk{color:var(--red)}
+  .eg .ok .mk{color:var(--green)}
+  .eg .txt{font-size:1.04rem}
+  .eg .ai .txt{color:var(--ink-soft)}
+  .eg .ai .txt i{font-style:normal;background:var(--red-soft);padding:0 .15em;border-radius:2px}
+  .note{font-style:italic;font-size:1.08rem;color:var(--ink-soft);border-left:2px solid var(--rule);
+    padding:.2rem 0 .2rem 1.1rem;margin:1.4rem 0}
+  .note b{font-style:normal;font-weight:600;color:var(--ink)}
+  ul.tight{margin:.2rem 0 1.05rem;padding-left:1.2rem}
+  ul.tight li{margin:.3rem 0}
+  strong{font-weight:600}
+  /* checklist */
+  .check{background:var(--ink);color:var(--paper);border-radius:3px;padding:1.8rem 1.7rem;margin-top:1.4rem}
+  .check .label{font-family:"JetBrains Mono",monospace;font-size:.7rem;letter-spacing:.18em;
+    text-transform:uppercase;color:#e8a39a;margin:0 0 1.1rem}
+  .check ol{margin:0;padding-left:0;list-style:none;counter-reset:c}
+  .check li{counter-increment:c;position:relative;padding:.5rem 0 .5rem 2.4rem;font-size:1.02rem;
+    color:#e9e3d4;border-top:1px solid #34322b}
+  .check li:first-child{border-top:0}
+  .check li::before{content:counter(c,decimal-leading-zero);position:absolute;left:0;top:.55rem;
+    font-family:"JetBrains Mono",monospace;font-size:.78rem;color:#e8a39a}
+  .foot{margin-top:5rem;border-top:1px solid var(--rule);padding-top:1rem;
+    font-family:"JetBrains Mono",monospace;font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--ink-soft);display:flex;justify-content:space-between}
+  .pulse{font-family:"JetBrains Mono",monospace;font-size:.9rem;line-height:1.7;color:var(--ink-soft);
+    background:var(--paper-2);border:1px solid var(--rule);border-radius:2px;padding:.9rem 1rem;margin:1.1rem 0}
+  .pulse .s{color:var(--ink)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="top">
+    <span>humanise · research</span>
+    <span><b>02</b> / 03 · the craft</span>
+  </div>
+
+  <header class="mast">
+    <p class="kicker">What to do instead</p>
+    <h1>The <em>Craft</em></h1>
+    <p class="standfirst">Removing tells is necessary, not sufficient. You can strip every banned word and still read as a machine if the rhythm is flat and the stance is absent. Humanising is additive.</p>
+  </header>
+
+  <p class="lead">Detectors do not only hunt vocabulary. They measure statistical shape: sentence-length uniformity, word predictability, syntactic rhythm. A clean, well-structured, perfectly neutral piece can still read as machine. The fix is not to write carelessly. It is to put variety, specifics and a point of view back in.</p>
+
+  <section class="principle">
+    <span class="num">Principle 01</span>
+    <h2>Vary the rhythm</h2>
+    <p class="tagline">Burstiness is the single most effective manual lever.</p>
+    <p>Model prose holds a near-constant sentence length. Human prose bursts. Short declaratives sit next to long, clause-heavy sentences that earn their length. Mix simple, compound and complex shapes deliberately. Break a long rambling line into two punchy ones, or fuse two stubby ones. Then read the whole thing aloud: if the pulse is even, it is not done.</p>
+    <div class="pulse">
+machine · <span>● ● ● ● ● ● ● ● ●</span>  (steady, 14 to 22 words, every line)<br>
+human   · <span>● ●●●●●●● ● ●●●●●●●●●●●● ●● ●</span>  (uneven, interrupted, asymmetric)
+    </div>
+  </section>
+
+  <section class="principle">
+    <span class="num">Principle 02</span>
+    <h2>Earn specifics</h2>
+    <p class="tagline">Concrete detail is "proof of life".</p>
+    <p>Generic abstraction is the texture of prediction. Lived, specific detail is the texture of a person. Names, numbers, times, the dish towel that smelled of last night's tacos. A model can imitate the shape of a personal anecdote, but it has nothing to draw the detail from, so the detail stays vague.</p>
+    <p>For a writing tool that genuinely has no lived experience, this principle inverts into an honest rule: <strong>prefer concrete nouns and active verbs over prestige abstractions, and ask the user for specifics rather than inventing them.</strong> "We integrate your stack", not "we weave a tapestry of solutions". Never fabricate a fake anecdote to pass as human.</p>
+    <div class="eg">
+      <div class="row ai"><span class="mk">✕</span><span class="txt"><i>The culture was a rich tapestry of diverse backgrounds.</i></span></div>
+      <div class="row ok"><span class="mk">✓</span><span class="txt">Half the team had never worked in fintech before, and it showed in the questions they asked.</span></div>
+    </div>
+  </section>
+
+  <section class="principle">
+    <span class="num">Principle 03</span>
+    <h2>Affirm, do not negate</h2>
+    <p class="tagline">State what the thing is. Directly.</p>
+    <p>The "not X, but Y" reflex is the most recognisable structural tell. Cure it at the level of the category, not the phrase. Banning a specific wording leaves the model free to reach for the next antithesis; instructing it to avoid <strong>thesis-antithesis patterns and rhetorical equivocation entirely</strong> blocks the statistical pathway and produces noticeably more direct prose. Keep contrast in the toolbox as a rare, high-impact move.</p>
+  </section>
+
+  <section class="principle">
+    <span class="num">Principle 04</span>
+    <h2>Take a position</h2>
+    <p class="tagline">Neutrality reads as machine.</p>
+    <p>Perfect balance, courteous hedging and smoothed tone are tells in their own right. Human writing leans. It emphasises one thing over another, risks an opinion, and occasionally cuts against the obvious read. Drop the reflexive "it's understandable that" and the HR-friendly warmth. Asymmetry is a feature.</p>
+  </section>
+
+  <section class="principle">
+    <span class="num">Principle 05</span>
+    <h2>Restraint</h2>
+    <p class="tagline">Say the claim once. Stop.</p>
+    <p>Cut the throat-clearing first sentence. Cut the dutiful summary that repeats what you just said. Drop the fake importance ("a pivotal moment") and the participle tails that fake analysis. The kanso instinct applies cleanly here: remove everything that is not doing work, and what remains reads more human, not less.</p>
+  </section>
+
+  <section class="principle">
+    <span class="num">Principle 06</span>
+    <h2>Natural connective tissue</h2>
+    <p class="tagline">Talk, do not transition.</p>
+    <p>Swap the mechanical connectives for the ones people actually use, or none at all. "Also", "but", "so", or simply start the next sentence. Use contractions. The aim is the cadence of someone explaining a thing to a friend, not a report stitched together with "furthermore" and "consequently".</p>
+    <div class="eg">
+      <div class="row ai"><span class="mk">✕</span><span class="txt"><i>Furthermore, it is important to note that the results were significant.</i></span></div>
+      <div class="row ok"><span class="mk">✓</span><span class="txt">The results were significant, which surprised us.</span></div>
+    </div>
+  </section>
+
+  <section>
+    <span class="num">06</span>
+    <h2>The final pass</h2>
+    <p>A silent checklist to run over any draft before it ships. Adapted from the working practice that has emerged among people doing this by hand.</p>
+    <div class="check">
+      <p class="label">Run silently, then send the cleaner version</p>
+      <ol>
+        <li>Cut the first sentence if it is throat-clearing.</li>
+        <li>Replace vague claims with specific ones.</li>
+        <li>Remove fake importance and puffery.</li>
+        <li>Check for repeated sentence shapes and openers.</li>
+        <li>Remove assistant chatter and dutiful sign-offs.</li>
+        <li>Replace bloated verbs with plain ones.</li>
+        <li>Hunt negative parallelism, including across sentence boundaries.</li>
+        <li>Delete rejected-frame and false-range constructions.</li>
+        <li>Cut analogies that do not earn their place.</li>
+        <li>Delete participle tails ("highlighting...", "underscoring...").</li>
+        <li>Strip every em dash. Restructure, do not just swap.</li>
+        <li>Vary sentence length until the pulse is uneven.</li>
+        <li>Cut the ending if it only repeats the point.</li>
+        <li>Ask: does this read as useful, or as overworked?</li>
+      </ol>
+    </div>
+    <p class="note"><b>A warning on shortcuts.</b> Synonym swaps and paraphrasers do not touch the statistical patterns detectors measure, and recent detectors specifically flag superficially edited AI text. The honest version of this work changes structure and stance, not just words, and never invents experience it does not have.</p>
+  </section>
+
+  <div class="foot">
+    <span>humanise · research</span>
+    <span>next → 03 · the skill</span>
+  </div>
+
+</div>
+</body>
+</html>

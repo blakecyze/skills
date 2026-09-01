@@ -1,0 +1,38 @@
+{
+  "name": "cyze",
+  "description": "Skill libraries by Blake Cyze. Name the failure, give it a check, keep the always-loaded layer short.",
+  "owner": {
+    "name": "Blake Cyze",
+    "url": "https://cyze.dev"
+  },
+  "plugins": [
+    {
+      "name": "kanso",
+      "source": "./skills/kanso",
+      "description": "Claude Code skills that keep AI-written code short and honest. Delete before you add, earn every line.",
+      "category": "engineering",
+      "tags": ["code-quality", "refactoring", "review"]
+    },
+    {
+      "name": "mimesis",
+      "source": "./skills/mimesis",
+      "description": "Strip AI tells from writing and design for human readers, and compile token-efficient instructions for machine readers. Guidelines outrank the model.",
+      "category": "writing",
+      "tags": ["writing", "prose", "prompting"]
+    },
+    {
+      "name": "swarm",
+      "source": "./skills/swarm",
+      "description": "Agent-orchestration skills for Claude Code. Fan work out in parallel, pick winners, and delegate execution to cheaper models — with a hard cost ceiling.",
+      "category": "engineering",
+      "tags": ["agents", "orchestration", "parallel"]
+    },
+    {
+      "name": "flow",
+      "source": "./skills/flow",
+      "description": "Design principles for AI agents. Passes an intent gate before touching styling, cites findings from a twelve-item taxonomy, and computes contrast and scale adherence rather than estimating them.",
+      "category": "design",
+      "tags": ["design", "ui", "accessibility", "design-system", "flutter", "react"]
+    }
+  ]
+}

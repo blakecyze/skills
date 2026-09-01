@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>humanise · 01 · The Tells</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..900;1,9..144,400..700&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#f6f2e9;
+    --paper-2:#efe9da;
+    --ink:#1b1a16;
+    --ink-soft:#56524a;
+    --rule:#ddd5c2;
+    --red:#b23a2e;
+    --red-soft:#f1ddd8;
+    --max:46rem;
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:"Newsreader",Georgia,serif;
+    font-size:1.18rem;
+    line-height:1.62;
+    font-optical-sizing:auto;
+  }
+  .wrap{max-width:var(--max);margin:0 auto;padding:clamp(1.4rem,4vw,4rem) clamp(1.2rem,5vw,2rem) 8rem}
+  /* running header */
+  .top{display:flex;justify-content:space-between;align-items:baseline;
+    font-family:"JetBrains Mono",monospace;font-size:.72rem;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--ink-soft);
+    border-bottom:1px solid var(--rule);padding-bottom:.8rem;margin-bottom:3.2rem}
+  .top b{color:var(--red);font-weight:500}
+  /* masthead */
+  .mast{margin-bottom:3.4rem}
+  .kicker{font-family:"JetBrains Mono",monospace;font-size:.74rem;letter-spacing:.22em;
+    text-transform:uppercase;color:var(--red);margin:0 0 1rem}
+  h1{font-family:"Fraunces",serif;font-weight:600;font-size:clamp(2.7rem,9vw,4.6rem);
+    line-height:.98;letter-spacing:-.02em;margin:0 0 1.1rem}
+  h1 em{font-style:italic;font-weight:400}
+  .standfirst{font-size:1.32rem;color:var(--ink-soft);max-width:34rem;margin:0;
+    font-variation-settings:"opsz" 30}
+  /* sections */
+  section{margin-top:3.6rem;scroll-margin-top:2rem}
+  .num{font-family:"Fraunces",serif;font-weight:300;font-size:1rem;color:var(--red);
+    letter-spacing:.05em;display:block;margin-bottom:.3rem}
+  h2{font-family:"Fraunces",serif;font-weight:600;font-size:clamp(1.7rem,5vw,2.3rem);
+    line-height:1.05;letter-spacing:-.01em;margin:.1rem 0 .9rem}
+  h3{font-family:"Newsreader",serif;font-weight:600;font-size:1.16rem;margin:1.8rem 0 .4rem;
+    letter-spacing:.005em}
+  p{margin:0 0 1.05rem}
+  .lead{font-size:1.24rem}
+  a{color:var(--red);text-underline-offset:3px}
+  /* kill list */
+  .kill{background:var(--paper-2);border:1px solid var(--rule);border-left:3px solid var(--red);
+    padding:1.2rem 1.3rem;margin:1.2rem 0;border-radius:2px}
+  .kill .label{font-family:"JetBrains Mono",monospace;font-size:.68rem;letter-spacing:.16em;
+    text-transform:uppercase;color:var(--red);margin:0 0 .7rem}
+  .chips{display:flex;flex-wrap:wrap;gap:.4rem .5rem;margin:0}
+  .chip{font-family:"JetBrains Mono",monospace;font-size:.82rem;background:var(--paper);
+    border:1px solid var(--rule);padding:.18rem .5rem;border-radius:2px;color:var(--ink);
+    position:relative}
+  .chip.struck{color:var(--ink-soft)}
+  .chip.struck::after{content:"";position:absolute;left:.3rem;right:.3rem;top:52%;height:1.5px;
+    background:var(--red);transform:rotate(-3deg)}
+  /* example before/after */
+  .eg{border-top:1px solid var(--rule);border-bottom:1px solid var(--rule);
+    margin:1.4rem 0;padding:.4rem 0}
+  .eg .row{display:flex;gap:.8rem;padding:.7rem 0;align-items:flex-start}
+  .eg .row+.row{border-top:1px dashed var(--rule)}
+  .eg .mk{font-family:"JetBrains Mono",monospace;font-size:.9rem;font-weight:500;flex:0 0 1.3rem;
+    line-height:1.5}
+  .eg .ai .mk{color:var(--red)}
+  .eg .ok .mk{color:#3f6b3f}
+  .eg .txt{font-size:1.04rem}
+  .eg .ai .txt{color:var(--ink-soft)}
+  .eg .ai .txt i{font-style:normal;background:var(--red-soft);padding:0 .15em;border-radius:2px}
+  /* note box */
+  .note{font-family:"Newsreader",serif;font-style:italic;font-size:1.08rem;color:var(--ink-soft);
+    border-left:2px solid var(--rule);padding:.2rem 0 .2rem 1.1rem;margin:1.4rem 0}
+  .note b{font-style:normal;font-weight:600;color:var(--ink)}
+  /* caveat */
+  .caveat{margin-top:4rem;padding:1.6rem 1.6rem;background:var(--ink);color:var(--paper);
+    border-radius:3px}
+  .caveat .label{font-family:"JetBrains Mono",monospace;font-size:.7rem;letter-spacing:.18em;
+    text-transform:uppercase;color:#e8a39a;margin:0 0 .7rem}
+  .caveat p{margin:0 0 .7rem;font-size:1.05rem;color:#e9e3d4}
+  .caveat p:last-child{margin:0}
+  /* footer */
+  .foot{margin-top:5rem;border-top:1px solid var(--rule);padding-top:1rem;
+    font-family:"JetBrains Mono",monospace;font-size:.72rem;letter-spacing:.1em;
+    text-transform:uppercase;color:var(--ink-soft);display:flex;justify-content:space-between}
+  ul.tight{margin:.2rem 0 1.05rem;padding-left:1.2rem}
+  ul.tight li{margin:.25rem 0}
+  strong{font-weight:600}
+  .drift{font-family:"JetBrains Mono",monospace;font-size:.84rem;line-height:1.5;
+    background:var(--paper-2);border:1px solid var(--rule);border-radius:2px;
+    padding:.9rem 1rem;margin:1.1rem 0}
+  .drift span{color:var(--red)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="top">
+    <span>humanise · research</span>
+    <span><b>01</b> / 03 · the tells</span>
+  </div>
+
+  <header class="mast">
+    <p class="kicker">A diagnostic catalogue</p>
+    <h1>The <em>Tells</em></h1>
+    <p class="standfirst">The statistical fingerprints that mark text as machine-written. They surface regardless of subject, which is exactly why they read as a "voice".</p>
+  </header>
+
+  <p class="lead">No single item below proves a machine wrote something. Each one nudges the probability. Detectors lean on two measures: <strong>perplexity</strong> (how predictable the next word is) and <strong>burstiness</strong> (how much sentence length varies). Human prose tends to score high on both. Model prose tends to score low on both, and to lean on a narrow set of habits a trained eye spots in seconds.</p>
+
+  <section>
+    <span class="num">01</span>
+    <h2>Lexical tells: the kill list</h2>
+    <p>The most studied signal. Multiple corpora show a small set of words spiking in frequency since late 2022. "Delve" is the reddest flag of all. Group the offenders so they are easier to hunt.</p>
+
+    <div class="kill">
+      <p class="label">Inflated verbs</p>
+      <div class="chips">
+        <span class="chip struck">delve</span><span class="chip struck">leverage</span><span class="chip struck">utilise</span><span class="chip struck">harness</span><span class="chip struck">streamline</span><span class="chip struck">underscore</span><span class="chip struck">foster</span><span class="chip struck">elevate</span><span class="chip struck">surpass</span><span class="chip struck">unlock</span><span class="chip struck">embark</span>
+      </div>
+    </div>
+
+    <div class="kill">
+      <p class="label">Prestige nouns and borrowed-grandeur metaphors</p>
+      <div class="chips">
+        <span class="chip struck">tapestry</span><span class="chip struck">landscape</span><span class="chip struck">realm</span><span class="chip struck">mosaic</span><span class="chip struck">ecosystem</span><span class="chip struck">symphony</span><span class="chip struck">beacon</span><span class="chip struck">cornerstone</span><span class="chip struck">bedrock</span><span class="chip struck">testament</span><span class="chip struck">odyssey</span><span class="chip struck">kaleidoscope</span><span class="chip struck">interplay</span>
+      </div>
+    </div>
+
+    <div class="kill">
+      <p class="label">Inflated adjectives</p>
+      <div class="chips">
+        <span class="chip struck">pivotal</span><span class="chip struck">robust</span><span class="chip struck">seamless</span><span class="chip struck">cutting-edge</span><span class="chip struck">multifaceted</span><span class="chip struck">vibrant</span><span class="chip struck">bustling</span><span class="chip struck">meticulous</span><span class="chip struck">crucial</span><span class="chip struck">paramount</span><span class="chip struck">unwavering</span><span class="chip struck">transformative</span><span class="chip struck">revolutionary</span>
+      </div>
+    </div>
+
+    <div class="kill">
+      <p class="label">Formulaic transitions and stock phrases</p>
+      <div class="chips">
+        <span class="chip struck">furthermore</span><span class="chip struck">moreover</span><span class="chip struck">consequently</span><span class="chip struck">notably</span><span class="chip struck">importantly</span><span class="chip struck">additionally</span><span class="chip struck">in today's ever-evolving world</span><span class="chip struck">it's important to note</span><span class="chip struck">when it comes to</span><span class="chip struck">in the realm of</span><span class="chip struck">at the heart of</span><span class="chip struck">in conclusion</span><span class="chip struck">in essence</span>
+      </div>
+    </div>
+
+    <div class="kill">
+      <p class="label">Assistant chatter</p>
+      <div class="chips">
+        <span class="chip struck">Certainly!</span><span class="chip struck">Great question</span><span class="chip struck">I hope this helps</span><span class="chip struck">Let's dive in</span><span class="chip struck">Remember that...</span>
+      </div>
+    </div>
+
+    <p class="note"><b>Model drift matters.</b> The kill list is not fixed. Each generation sheds some habits and grows new ones, so a current skill should treat the list as versioned, not eternal.</p>
+
+    <div class="drift">
+GPT-4 era  · <span>delve, tapestry, testament, meticulous, pivotal, underscore, vibrant, intricate</span><br>
+GPT-4o era · <span>align with, bolstered, enhance, fostering, highlighting, showcasing, underscore</span><br>
+GPT-5 era  · <span>emphasising, enhance, highlighting, showcasing + semicolon overuse, undue "notability" framing</span>
+    </div>
+  </section>
+
+  <section>
+    <span class="num">02</span>
+    <h2>Syntactic and rhetorical tells</h2>
+    <p>Harder to grep for than words, and often the stronger signal. These are sentence shapes, not vocabulary.</p>
+
+    <h3>Negative parallelism (the antithesis tic)</h3>
+    <p>Classical rhetoric calls it antithesis: negate a familiar idea, then replace it with something grander. A high-impact device used sparingly by good writers, flattened by models into a reflex. The single most recognised structural tell after the em dash.</p>
+    <div class="eg">
+      <div class="row ai"><span class="mk">✕</span><span class="txt"><i>It's not just a dashboard, it's a command centre.</i></span></div>
+      <div class="row ai"><span class="mk">✕</span><span class="txt"><i>It's less about efficiency and more about transformation.</i></span></div>
+      <div class="row ok"><span class="mk">✓</span><span class="txt">This dashboard puts approvals, comments and status in one place.</span></div>
+    </div>
+
+    <h3>The rule of three</h3>
+    <p>Models reach for tricolons when they have nothing specific to say: three parallel items, almost always equal in length and punctuation. "Speed, efficiency and innovation." Humans use the tricolon too, which is why the flattened, content-free version is the tell. Try two items, or four, or the one that matters.</p>
+
+    <h3>The participle trap</h3>
+    <p>An "-ing" phrase bolted to a sentence to fake analysis. <i>Highlighting its importance. Underscoring its significance. Contributing to the broader picture.</i> Nobody is doing the highlighting. If the point matters, give it a full sentence with a real claim.</p>
+
+    <h3>False ranges and puffery</h3>
+    <ul class="tight">
+      <li><strong>False range:</strong> "from ancient traditions to modern innovations." Sounds sweeping, names nothing. If you cannot name the meaningful middle, the range is fake.</li>
+      <li><strong>Puffery:</strong> "a pivotal moment", "a seismic shift". State what happened and let the reader judge the size.</li>
+      <li><strong>Weasel attribution:</strong> "has been described as...", vague opinions credited to no one in particular.</li>
+    </ul>
+  </section>
+
+  <section>
+    <span class="num">03</span>
+    <h2>Punctuation tells</h2>
+    <h3>The em dash</h3>
+    <p>The headline tell of 2025, to the point that "ChatGPT hyphen" became a meme. GPT-3.5 barely used it; GPT-4o used roughly ten times more, and later models pushed further, a habit traced to a shift towards high-quality print training data. The mark itself is centuries old and beloved by careful writers, so the backlash also produces false accusations. For this project the verdict is simple: <strong>zero em dashes, no exceptions.</strong> Restructure into commas, full stops, parentheses or two sentences.</p>
+    <h3>Lesser punctuation signals</h3>
+    <ul class="tight">
+      <li>Curly "smart" quotes and apostrophes where a person typing fast would leave straight ones.</li>
+      <li>Semicolon overuse, the newer GPT-5 era habit, likely a side effect of brevity tuning.</li>
+      <li>Flawless, evenly distributed comma usage with no improvised punctuation anywhere.</li>
+    </ul>
+  </section>
+
+  <section>
+    <span class="num">04</span>
+    <h2>Structural tells</h2>
+    <p>The scaffolding survives even when the wording is edited, which is why it is such a durable signal.</p>
+    <ul class="tight">
+      <li><strong>Intro, point, point, point, conclusion.</strong> The five-beat template that fits any topic and therefore fits none.</li>
+      <li><strong>Paragraph uniformity.</strong> Every paragraph follows the same internal recipe. Nothing is wrong with any one of them, then it repeats five times.</li>
+      <li><strong>The dutiful closing line.</strong> A summary the reader did not need, because the model is trained to be helpful and safe. Humans stop once the point lands.</li>
+      <li><strong>Metronomic rhythm.</strong> A 14 to 22 word median with little variance. Read it aloud and you hear a steady, machine-like pulse with no short interruptions and no long, messy detours.</li>
+      <li><strong>Repeated openers.</strong> "This study shows...", "It is crucial to..." starting sentence after sentence.</li>
+    </ul>
+  </section>
+
+  <section>
+    <span class="num">05</span>
+    <h2>Tonal tells</h2>
+    <ul class="tight">
+      <li><strong>Relentless courtesy and neutrality.</strong> A friendliness no adult uses unless they work in HR or support. Reflexive hedging: "It's understandable that...".</li>
+      <li><strong>Smoothed emotional tone.</strong> No edges, no asymmetry, nothing risked.</li>
+      <li><strong>Fake intimacy.</strong> "Here's the thing." "Here's an uncomfortable truth." Pretending to level with you.</li>
+      <li><strong>Empty intensifiers.</strong> "Genuinely", "truly", "actually" used to sound sincere while intensifying nothing.</li>
+      <li><strong>Emoji-bulleted social posts</strong> with a titled intro, the classic LinkedIn giveaway.</li>
+    </ul>
+  </section>
+
+  <div class="caveat">
+    <p class="label">Read this before trusting any of it</p>
+    <p>These are probabilities, not proof. Detectors produce false positives, and skilled human writers use em dashes, tricolons and antithesis on purpose. People have been wrongly accused over a single dash.</p>
+    <p>The goal of the humanise skill is not to defeat a detector. It is to write with signal, specificity and a point of view, which happens to be what the tells lack. Gaming a score by swapping synonyms changes nothing the detectors actually measure. Structure and stance are what move the needle.</p>
+  </div>
+
+  <div class="foot">
+    <span>humanise · research</span>
+    <span>next → 02 · the craft</span>
+  </div>
+
+</div>
+</body>
+</html>

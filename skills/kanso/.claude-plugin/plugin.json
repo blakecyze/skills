@@ -1,0 +1,21 @@
+{
+  "name": "kanso",
+  "version": "0.4.1",
+  "description": "Claude Code skills that keep AI-written code short and honest. Delete before you add, earn every line.",
+  "author": {
+    "name": "Blake Cyze",
+    "url": "https://cyze.dev"
+  },
+  "homepage": "https://github.com/blakecyze/kanso",
+  "repository": "https://github.com/blakecyze/kanso",
+  "license": "MIT",
+  "keywords": [
+    "claude-code",
+    "skills",
+    "code-quality",
+    "anti-slop",
+    "refactor",
+    "code-review",
+    "maintainability"
+  ]
+}

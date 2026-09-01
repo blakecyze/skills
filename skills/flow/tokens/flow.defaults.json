@@ -1,0 +1,116 @@
+{
+  "$schema": "./schema.json",
+  "version": 1,
+  "density": "standard",
+
+  "spacing": {
+    "base": 4,
+    "ramp": [4, 8, 12, 16, 24, 32, 48, 64, 96],
+    "classes": {
+      "dense":    { "intra": 4,  "group": 12, "section": 24 },
+      "standard": { "intra": 8,  "group": 16, "section": 32 },
+      "spacious": { "intra": 16, "group": 32, "section": 64 }
+    },
+    "minProximityRatio": 2.0
+  },
+
+  "radius": {
+    "none": 0,
+    "sm": 6,
+    "md": 10,
+    "lg": 16,
+    "full": 9999,
+    "maxDistinctInUse": 3
+  },
+
+  "type": {
+    "ratio": 1.2,
+    "scale": { "xs": 12, "sm": 14, "base": 16, "lg": 18, "xl": 24, "2xl": 32, "3xl": 40 },
+    "weights": { "regular": 400, "medium": 500, "strong": 600 },
+    "maxDistinctWeights": 3,
+    "lineHeight": {
+      "display": 1.15,
+      "heading": 1.25,
+      "body": 1.5,
+      "dense": 1.4,
+      "longform": 1.6
+    },
+    "measure": { "min": 45, "target": 65, "max": 75 }
+  },
+
+  "colour": {
+    "neutral": [
+      "#FFFFFF",
+      "#FAFAFA",
+      "#F4F4F5",
+      "#E4E4E7",
+      "#D4D4D8",
+      "#A1A1AA",
+      "#52525B",
+      "#3F3F46",
+      "#27272A",
+      "#18181B"
+    ],
+    "neutralRoles": {
+      "background": 0,
+      "surface": 1,
+      "subtle": 2,
+      "border": 3,
+      "disabled": 5,
+      "secondaryText": 6,
+      "bodyText": 8,
+      "headingText": 9
+    },
+    "semantic": {
+      "primary": "#2563EB",
+      "success": "#16A34A",
+      "warning": "#D97706",
+      "danger": "#DC2626",
+      "focus": "#2563EB"
+    },
+    "maxDecorativeHues": 0,
+    "elevation": {
+      "device": "shadow",
+      "maxLevels": 3,
+      "note": "Pick one device: shadow, border, or surface shift. Using more than one on a single element is FLOW-05."
+    }
+  },
+
+  "contrast": {
+    "bodyText": 4.5,
+    "largeText": 3.0,
+    "uiComponent": 3.0,
+    "focusIndicator": 3.0,
+    "largeTextThresholdPx": 18,
+    "largeBoldThresholdPx": 14
+  },
+
+  "targets": {
+    "minTouch": { "ios": 44, "android": 48, "web": 44 },
+    "minPointer": 24,
+    "minGapBetweenTargets": 8,
+    "minFocusRingWidth": 2,
+    "minFocusRingOffset": 2
+  },
+
+  "motion": {
+    "micro": [100, 150],
+    "transition": [200, 300],
+    "navigation": [300, 400],
+    "easing": {
+      "entrance": "ease-out",
+      "exit": "ease-in",
+      "move": "ease-in-out"
+    },
+    "respectReducedMotion": true
+  },
+
+  "health": {
+    "maxDistinctSpacingValues": 10,
+    "minStepSeparationPx": 2,
+    "driftThreshold": 3,
+    "deFactoTokenThreshold": 10
+  },
+
+  "notes": "Defaults only. Run flow-tokens to generate flow.config.json for a project; values there override these. A short config file is a healthy sign."
+}

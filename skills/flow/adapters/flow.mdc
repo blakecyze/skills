@@ -1,0 +1,26 @@
+---
+description: Design rules for any UI work. Intent gate, violation taxonomy, and token discipline.
+globs: ["**/*.dart", "**/*.tsx", "**/*.jsx", "**/*.vue", "**/*.svelte", "**/*.css", "**/*.scss"]
+alwaysApply: false
+---
+
+# Flow
+
+Before any styling change, read `flow/skills/flow-principles/SKILL.md` and pass the intent gate: purpose, primary action, reading order, density class. State the answers in the response.
+
+Every finding and every change cites a taxonomy ID, `FLOW-01` to `FLOW-12`.
+
+Reviewing → `flow/skills/flow-audit/SKILL.md`
+Restyling → `flow/skills/flow-apply/SKILL.md`
+Scale work → `flow/skills/flow-tokens/SKILL.md`
+
+Reference files under `flow/references/` load on demand only.
+
+Contrast ratios, scale membership, and measure are computed, never estimated:
+
+```
+python3 flow/scripts/contrast.py "#FG" "#BG"
+python3 flow/scripts/scan_tokens.py <path>
+```
+
+Appearance only. Logic, state, routing, and data flow are out of scope. If a fix would change behaviour, surface it as a question instead of making it.

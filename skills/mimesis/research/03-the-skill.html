@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>humanise · 03 · The Skill</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..900;1,9..144,400..700&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#f6f2e9;--paper-2:#efe9da;--ink:#1b1a16;--ink-soft:#56524a;
+    --rule:#ddd5c2;--red:#b23a2e;--red-soft:#f1ddd8;--green:#3f6b3f;--max:46rem;
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--paper);color:var(--ink);
+    font-family:"Newsreader",Georgia,serif;font-size:1.18rem;line-height:1.62;font-optical-sizing:auto}
+  .wrap{max-width:var(--max);margin:0 auto;padding:clamp(1.4rem,4vw,4rem) clamp(1.2rem,5vw,2rem) 8rem}
+  .top{display:flex;justify-content:space-between;align-items:baseline;
+    font-family:"JetBrains Mono",monospace;font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--ink-soft);border-bottom:1px solid var(--rule);padding-bottom:.8rem;margin-bottom:3.2rem}
+  .top b{color:var(--red);font-weight:500}
+  .mast{margin-bottom:3.2rem}
+  .kicker{font-family:"JetBrains Mono",monospace;font-size:.74rem;letter-spacing:.22em;
+    text-transform:uppercase;color:var(--red);margin:0 0 1rem}
+  h1{font-family:"Fraunces",serif;font-weight:600;font-size:clamp(2.7rem,9vw,4.6rem);
+    line-height:.98;letter-spacing:-.02em;margin:0 0 1.1rem}
+  h1 em{font-style:italic;font-weight:400}
+  .standfirst{font-size:1.32rem;color:var(--ink-soft);max-width:35rem;margin:0;font-variation-settings:"opsz" 30}
+  section{margin-top:3.6rem}
+  .num{font-family:"Fraunces",serif;font-weight:300;font-size:1rem;color:var(--red);
+    letter-spacing:.05em;display:block;margin-bottom:.3rem}
+  h2{font-family:"Fraunces",serif;font-weight:600;font-size:clamp(1.7rem,5vw,2.3rem);
+    line-height:1.05;letter-spacing:-.01em;margin:.1rem 0 .9rem}
+  h3{font-family:"Newsreader",serif;font-weight:600;font-size:1.16rem;margin:1.7rem 0 .4rem}
+  p{margin:0 0 1.05rem}
+  .lead{font-size:1.24rem}
+  a{color:var(--red);text-underline-offset:3px}
+  ul.tight{margin:.2rem 0 1.05rem;padding-left:1.2rem}
+  ul.tight li{margin:.3rem 0}
+  strong{font-weight:600}
+  code{font-family:"JetBrains Mono",monospace;font-size:.86em;background:var(--paper-2);
+    border:1px solid var(--rule);padding:.05em .35em;border-radius:2px}
+  /* naming table */
+  .names{margin:1.2rem 0;border-top:1px solid var(--rule)}
+  .names .r{display:grid;grid-template-columns:8rem 1fr;gap:1rem;padding:.85rem 0;
+    border-bottom:1px solid var(--rule);align-items:baseline}
+  .names .nm{font-family:"JetBrains Mono",monospace;font-size:.95rem;color:var(--ink)}
+  .names .r.pick{background:var(--red-soft);margin:0 -.7rem;padding:.85rem .7rem;border-bottom:1px solid var(--rule)}
+  .names .r.pick .nm{color:var(--red);font-weight:500}
+  .names .d{font-size:.98rem;color:var(--ink-soft)}
+  .names .d b{color:var(--ink);font-style:normal;font-weight:600}
+  /* modes */
+  .modes{display:grid;gap:.8rem;margin:1.2rem 0}
+  .mode{border:1px solid var(--rule);border-left:3px solid var(--red);border-radius:2px;
+    padding:1rem 1.1rem;background:var(--paper-2)}
+  .mode .h{font-family:"JetBrains Mono",monospace;font-size:.82rem;letter-spacing:.08em;
+    text-transform:uppercase;color:var(--red);margin:0 0 .35rem}
+  .mode p{margin:0;font-size:1rem;color:var(--ink-soft)}
+  /* precedence stack */
+  .stack{margin:1.2rem 0}
+  .layer{display:flex;gap:.9rem;align-items:flex-start;padding:.8rem 1rem;border:1px solid var(--rule);
+    border-radius:2px;margin-bottom:.5rem;background:var(--paper-2)}
+  .layer .lv{font-family:"JetBrains Mono",monospace;font-size:.74rem;color:var(--red);flex:0 0 3.4rem;
+    letter-spacing:.06em;padding-top:.18rem}
+  .layer .lt{font-size:1rem}
+  .layer .lt b{font-weight:600}
+  .layer.primary{border-left:3px solid var(--green)}
+  .layer.optional{opacity:.85;border-style:dashed}
+  /* flag box */
+  .flag{margin:1.4rem 0;padding:1.4rem 1.5rem;background:var(--ink);color:var(--paper);border-radius:3px}
+  .flag .label{font-family:"JetBrains Mono",monospace;font-size:.7rem;letter-spacing:.18em;
+    text-transform:uppercase;color:#e8a39a;margin:0 0 .7rem}
+  .flag p{margin:0 0 .7rem;font-size:1.04rem;color:#e9e3d4}
+  .flag p:last-child{margin:0}
+  .flag b{color:#fff;font-weight:600}
+  /* rule banner */
+  .banner{border:2px solid var(--red);border-radius:3px;padding:1.1rem 1.3rem;margin:1.4rem 0;
+    display:flex;gap:.9rem;align-items:center}
+  .banner .x{font-family:"Fraunces",serif;font-size:2.2rem;color:var(--red);line-height:1}
+  .banner .t{font-size:1.04rem}
+  .banner .t b{font-weight:600}
+  .foot{margin-top:5rem;border-top:1px solid var(--rule);padding-top:1rem;
+    font-family:"JetBrains Mono",monospace;font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--ink-soft);display:flex;justify-content:space-between}
+  .tree{font-family:"JetBrains Mono",monospace;font-size:.86rem;line-height:1.65;color:var(--ink-soft);
+    background:var(--paper-2);border:1px solid var(--rule);border-radius:2px;padding:1rem 1.1rem;margin:1.1rem 0;
+    white-space:pre;overflow-x:auto}
+  .tree b{color:var(--ink)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="top">
+    <span>humanise · research</span>
+    <span><b>03</b> / 03 · the skill</span>
+  </div>
+
+  <header class="mast">
+    <p class="kicker">Design and integration</p>
+    <h1>The <em>Skill</em></h1>
+    <p class="standfirst">Turning the catalogue and the craft into a working Claude Code skill: how it should behave, what takes precedence, and where an optional Codex generator fits without becoming a liability.</p>
+  </header>
+
+  <p class="lead">A skill, not a prompt. It plugs into the kanso suite, exposes a slash command, and treats the humanisation guidelines as load-bearing. The model that writes the words is the least important part, which is the central design call below.</p>
+
+  <section>
+    <span class="num">01</span>
+    <h2>Naming</h2>
+    <p>The thing you were reaching for is a machine that imitates a person. A few candidates, with the command each would expose:</p>
+    <div class="names">
+      <div class="r"><span class="nm">mimic</span><span class="d">Plain and direct. The act of imitation itself. <code>/mimic</code> reads oddly as a verb for "clean this up", though.</span></div>
+      <div class="r pick"><span class="nm">mimesis</span><span class="d"><b>Recommended.</b> Greek for imitation or representation. Short, brandable, sits naturally beside kanso, and fits your aesthetic. Name it after what it neutralises. <code>/mimesis</code> or keep <code>/humanise</code> as the verb-command and "mimesis" as the suite name.</span></div>
+      <div class="r"><span class="nm">turing</span><span class="d">The imitation game. Clear lineage, but heavy and a touch obvious.</span></div>
+      <div class="r"><span class="nm">turk</span><span class="d">From the Mechanical Turk, the automaton that hid a human. Literally a machine passing as a person. Witty, slightly obscure.</span></div>
+      <div class="r"><span class="nm">uncanny</span><span class="d">The valley of almost-human. Evocative, but names the symptom, not the act.</span></div>
+    </div>
+    <p>My pick is <strong>mimesis</strong> for the suite identity, keeping <code>/humanise</code> as the command verb so the action stays obvious at the call site. If you want one word doing both, <code>/mimesis</code> works.</p>
+  </section>
+
+  <section>
+    <span class="num">02</span>
+    <h2>Three modes</h2>
+    <p>The skill should detect intent and run one of three modes, mirroring how <code>kanso-audit</code> and <code>kanso-refactor</code> split read-only analysis from edits.</p>
+    <div class="modes">
+      <div class="mode"><p class="h">audit</p><p>Read-only. Flags every tell in supplied text with location and category, scored by severity. The diagnostic pass. No rewriting.</p></div>
+      <div class="mode"><p class="h">rewrite</p><p>Meaning-preserving humanisation of an existing draft. Applies the craft principles and the final pass. Never changes factual claims, never invents experience.</p></div>
+      <div class="mode"><p class="h">generate</p><p>Drafts new text already humanised from the start, rather than producing clean-then-clean output.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <span class="num">03</span>
+    <h2>The precedence stack</h2>
+    <p>This is the architectural spine. The guidelines outrank the model. Layers run top to bottom, and the lower a layer sits, the more optional and replaceable it is.</p>
+    <div class="stack">
+      <div class="layer primary"><span class="lv">L1</span><span class="lt"><b>Guideline corpus.</b> The distilled tells and craft (docs 01 and 02) shipped as reference markdown the skill reads on every run. Primary. Model-independent. Never skipped.</span></div>
+      <div class="layer primary"><span class="lv">L2</span><span class="lt"><b>Deterministic linter.</b> A scripted pass: regex and word-list checks for em dashes, smart quotes, the blacklist, and "not X but Y" shapes. Runs regardless of which model wrote the text, so the output is safe even if generation went sideways.</span></div>
+      <div class="layer optional"><span class="lv">L3</span><span class="lt"><b>Generator (optional).</b> Whatever model is to hand. Claude by default. Codex / GPT-5.5 only if installed and opted into. The generator is the last and most swappable layer, never the thing the quality rests on.</span></div>
+    </div>
+    <p>The point: even if a future model regresses or a generator misbehaves, L1 and L2 still produce humanised, em-dash-free text. Quality is a property of the guidelines and the linter, not of the model.</p>
+  </section>
+
+  <section>
+    <span class="num">04</span>
+    <h2>The Codex / GPT-5.5 option</h2>
+    <p>You asked the skill to detect the Codex CLI and route generation to GPT-5.5 because it is "better". GPT-5.5 is real, released April 2026, and Codex CLI does run on it, so the plumbing is feasible: probe for <code>codex</code> on <code>PATH</code>, and if present and the user opts in, shell out for the generate step.</p>
+    <div class="flag">
+      <p class="label">Flagged: the "better" premise</p>
+      <p>The research cuts against routing prose to GPT on a quality assumption. The GPT lineage is the <b>origin</b> of most documented tells, the em dash, "delve", negative parallelism, and 5.5 is tuned for agentic coding and tool use, not prose voice. There is no evidence it humanises better than the model already running the skill.</p>
+      <p>Proposed alternative, which the stack already encodes: keep generation <b>model-agnostic</b>, make Codex strictly optional, and always run the same L1 guidelines and L2 linter pass afterwards no matter who generated. So if Codex writes the draft, the Claude-run humanise pass still cleans it. You get the option without betting quality on it.</p>
+    </div>
+    <p>If you do want the option live, gate it behind an explicit flag (<code>--gen codex</code>) rather than auto-routing, so the default path stays predictable.</p>
+  </section>
+
+  <section>
+    <span class="num">05</span>
+    <h2>Two absolute rules</h2>
+    <div class="banner">
+      <span class="x">—</span>
+      <span class="t"><b>Zero em dashes, ever.</b> The linter strips and restructures them into commas, full stops or parentheses. It also catches the spaced-hyphen and en-dash-as-em workarounds.</span>
+    </div>
+    <p><strong>Catch the merely perceived, too.</strong> The skill flags constructions that read as AI even when grammatically fine: tricolons, "it's not X it's Y", participle tails, dutiful sign-offs. These get downgraded or rewritten, not waved through on a technicality.</p>
+  </section>
+
+  <section>
+    <span class="num">06</span>
+    <h2>Shape on disk</h2>
+    <p>Mirror the existing kanso skills so it feels native to the suite.</p>
+    <div class="tree">mimesis/
+├─ <b>SKILL.md</b>            description, triggers, the three modes
+├─ reference/
+│  ├─ <b>tells.md</b>        distilled from doc 01, versioned by model era
+│  └─ <b>craft.md</b>        distilled from doc 02, the final-pass checklist
+├─ <b>linter</b>             deterministic em-dash + blacklist + pattern pass
+└─ <b>codex.md</b>           optional generator: detection + opt-in gate</div>
+    <p>The <code>SKILL.md</code> description must trigger on the right asks: "make this sound human", "humanise this", "does this read as AI", "remove AI tells", "de-slop this". Triggering accuracy is its own piece of work, the same way your kanso descriptions are tuned.</p>
+  </section>
+
+  <section>
+    <span class="num">07</span>
+    <h2>Limits worth stating in the skill</h2>
+    <ul class="tight">
+      <li>Detectors false-positive. The skill writes for signal and voice, it does not promise to beat any given detector.</li>
+      <li>Meaning preservation is mandatory in rewrite mode. No claim changes, no fabricated anecdotes.</li>
+      <li>The kill list is versioned, not eternal. Plan to revisit it as models drift.</li>
+    </ul>
+  </section>
+
+  <div class="foot">
+    <span>humanise · research</span>
+    <span>end · build prompt follows</span>
+  </div>
+
+</div>
+</body>
+</html>

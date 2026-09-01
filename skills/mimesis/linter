@@ -1,0 +1,419 @@
+#!/usr/bin/env python3
+"""
+mimesis linter (L2): the deterministic pass.
+
+Flags the tells that do not need judgement, regardless of which model wrote the
+text. Detection only. It reports; it never rewrites. The rewrite (restructuring
+an em dash into commas, full stops or parentheses) is the model's job under the
+L1 guidelines, never a blind find-and-replace.
+
+Categories:
+  em-dash               blocker   the absolute rule: zero, including workarounds
+  smart-quotes          polish    curly quotes and primes
+  blacklist             varies    kill-list words and phrases (see reference/tells.md)
+  negative-parallelism  important "not X but Y", "it's not X it's Y", and kin
+  participle-tail       important clause-final "highlighting...", "underscoring..."
+  repeated-opener       polish    the same opener on three or more sentences
+  hedging               polish    reflexive hedge phrases
+  low-burstiness        important even sentence length (heuristic, advisory)
+  low-lexical-diversity polish    narrow vocabulary (heuristic, advisory)
+  earned-word           polish    Latinate formality a plain word beats (advisory)
+
+Usage:
+  linter [FILE ...]          read files (or stdin if none) and print a report
+  linter --json [FILE ...]   emit findings as JSON
+  linter --help
+
+Exit status: 0 if clean, 1 if any finding.
+
+The blacklist below mirrors reference/tells.md. When you revise one for model
+drift, revise the other. tells.md is the canonical, era-versioned source; this
+list is its machine-readable shadow. The same lockstep holds for _EARNED, which
+mirrors the earned-word set in tells.md section 1.
+"""
+
+import sys
+import re
+import json
+
+BLOCKER = "blocker"
+IMPORTANT = "important"
+POLISH = "polish"
+
+# --- blacklist -------------------------------------------------------------
+# Each entry: (compiled regex, label, severity). Word stems carry their common
+# inflections so "fostering" and "fostered" are caught alongside "foster".
+# Kept deliberately tight: only items the research marks as reliable tells.
+
+_WORD = [
+    # inflated verbs (important)
+    (r"delv(?:e|es|ed|ing)", "delve", IMPORTANT),
+    (r"leverag(?:e|es|ed|ing)", "leverage", IMPORTANT),
+    (r"utilis(?:e|es|ed|ing)", "utilise", IMPORTANT),
+    (r"utiliz(?:e|es|ed|ing)", "utilize", IMPORTANT),
+    (r"harness(?:es|ed|ing)?", "harness", IMPORTANT),
+    (r"streamlin(?:e|es|ed|ing)", "streamline", IMPORTANT),
+    (r"underscor(?:e|es|ed|ing)", "underscore", IMPORTANT),
+    (r"foster(?:s|ed|ing)?", "foster", IMPORTANT),
+    (r"elevat(?:e|es|ed|ing)", "elevate", IMPORTANT),
+    (r"surpass(?:es|ed|ing)?", "surpass", IMPORTANT),
+    (r"unlock(?:s|ed|ing)?", "unlock", IMPORTANT),
+    (r"embark(?:s|ed|ing)?", "embark", IMPORTANT),
+    (r"emphasis(?:e|es|ed|ing)", "emphasise", IMPORTANT),
+    (r"emphasiz(?:e|es|ed|ing)", "emphasize", IMPORTANT),
+    (r"showcas(?:e|es|ed|ing)", "showcase", IMPORTANT),
+    (r"bolster(?:s|ed|ing)?", "bolster", IMPORTANT),
+    (r"enhanc(?:e|es|ed|ing)", "enhance", IMPORTANT),
+    (r"supercharg(?:e|es|ed|ing)", "supercharge", IMPORTANT),
+    (r"revolutionis(?:e|es|ed|ing)", "revolutionise", IMPORTANT),
+    (r"revolutioniz(?:e|es|ed|ing)", "revolutionize", IMPORTANT),
+    (r"propel(?:s|led|ling)?", "propel", IMPORTANT),
+    # prestige nouns and borrowed-grandeur metaphors (important)
+    (r"tapestr(?:y|ies)", "tapestry", IMPORTANT),
+    (r"landscapes?", "landscape", IMPORTANT),
+    (r"realms?", "realm", IMPORTANT),
+    (r"mosaics?", "mosaic", IMPORTANT),
+    (r"ecosystems?", "ecosystem", IMPORTANT),
+    (r"symphon(?:y|ies)", "symphony", IMPORTANT),
+    (r"beacons?", "beacon", IMPORTANT),
+    (r"cornerstones?", "cornerstone", IMPORTANT),
+    (r"bedrock", "bedrock", IMPORTANT),
+    (r"testaments?", "testament", IMPORTANT),
+    (r"odyssey?s?|odysseys", "odyssey", IMPORTANT),
+    (r"kaleidoscopes?", "kaleidoscope", IMPORTANT),
+    (r"interplay", "interplay", IMPORTANT),
+    (r"synerg(?:y|ies)", "synergy", IMPORTANT),
+    (r"paradigms?", "paradigm", IMPORTANT),
+    # inflated adjectives (important)
+    (r"pivotal", "pivotal", IMPORTANT),
+    (r"robust", "robust", IMPORTANT),
+    (r"seamless(?:ly)?", "seamless", IMPORTANT),
+    (r"cutting-edge", "cutting-edge", IMPORTANT),
+    (r"multifaceted", "multifaceted", IMPORTANT),
+    (r"vibrant", "vibrant", IMPORTANT),
+    (r"bustling", "bustling", IMPORTANT),
+    (r"meticulous(?:ly)?", "meticulous", IMPORTANT),
+    (r"crucial(?:ly)?", "crucial", IMPORTANT),
+    (r"paramount", "paramount", IMPORTANT),
+    (r"unwavering", "unwavering", IMPORTANT),
+    (r"transformative", "transformative", IMPORTANT),
+    (r"revolutionary", "revolutionary", IMPORTANT),
+    (r"intricate(?:ly)?", "intricate", IMPORTANT),
+    (r"world-class", "world-class", IMPORTANT),
+    (r"enterprise-grade", "enterprise-grade", IMPORTANT),
+    (r"best-in-class", "best-in-class", IMPORTANT),
+    (r"game-chang(?:ing|er)", "game-changing", IMPORTANT),
+    (r"groundbreaking", "groundbreaking", IMPORTANT),
+    (r"holistic", "holistic", IMPORTANT),
+    (r"visionary", "visionary", IMPORTANT),
+    (r"unparalleled", "unparalleled", IMPORTANT),
+    (r"unprecedented", "unprecedented", IMPORTANT),
+    # formulaic transitions (polish)
+    (r"furthermore", "furthermore", POLISH),
+    (r"moreover", "moreover", POLISH),
+    (r"consequently", "consequently", POLISH),
+    (r"notably", "notably", POLISH),
+    (r"importantly", "importantly", POLISH),
+    (r"additionally", "additionally", POLISH),
+]
+
+# Multi-word stock phrases and assistant chatter (polish). Matched literally,
+# case-insensitive, with loose internal whitespace.
+_PHRASE = [
+    (r"in today'?s ever-evolving world", "in today's ever-evolving world", POLISH),
+    (r"it'?s important to note", "it's important to note", POLISH),
+    (r"when it comes to", "when it comes to", POLISH),
+    (r"in the realm of", "in the realm of", POLISH),
+    (r"at the heart of", "at the heart of", POLISH),
+    (r"in conclusion", "in conclusion", POLISH),
+    (r"in essence", "in essence", POLISH),
+    (r"align(?:s|ed|ing)? with", "align with", POLISH),
+    (r"great question", "great question", POLISH),
+    (r"i hope this helps", "I hope this helps", POLISH),
+    (r"let'?s dive in", "let's dive in", POLISH),
+    (r"let'?s delve in(?:to)?", "let's delve in", POLISH),
+    # marketing and outreach dead phrases (polish)
+    (r"hope this (?:e-?mail |message |note )?finds you well", "hope this finds you well", POLISH),
+    (r"i'?d love to connect", "I'd love to connect", POLISH),
+    (r"as per my last (?:e-?mail|message)", "as per my last email", POLISH),
+    (r"in today'?s fast-paced world", "in today's fast-paced world", POLISH),
+    (r"at the forefront of", "at the forefront of", POLISH),
+    (r"redefining what'?s possible", "redefining what's possible", POLISH),
+]
+
+BLACKLIST = [(re.compile(r"\b" + p + r"\b", re.I), label, sev) for p, label, sev in _WORD]
+BLACKLIST += [(re.compile(p, re.I), label, sev) for p, label, sev in _PHRASE]
+
+# --- earned-word set ---------------------------------------------------------
+# Latinate formality a plain word almost always beats. Advisory: an occurrence
+# may stand when the extra meaning is earned (craft.md Principle 7, the swap
+# test). Mirrors the earned-word set in reference/tells.md section 1; the two
+# change together or not at all. "utilise"/"utilize" live on the kill list, so
+# only the noun forms appear here.
+
+_EARNED = [
+    (r"commenc(?:e|es|ed|ing|ement|ements)", "commence", "start"),
+    (r"endeavou?r(?:s|ed|ing)?", "endeavour", "try"),
+    (r"ascertain(?:s|ed|ing)?", "ascertain", "find out"),
+    (r"facilitat(?:e|es|ed|ing)", "facilitate", "help"),
+    (r"necessitat(?:e|es|ed|ing)", "necessitate", "require"),
+    (r"subsequently", "subsequently", "then"),
+    (r"aforementioned", "aforementioned", "that"),
+    (r"utili[sz]ations?", "utilisation", "use"),
+    (r"prior to", "prior to", "before"),
+    (r"in order to", "in order to", "to"),
+    (r"in the event that", "in the event that", "if"),
+    (r"with regards? to", "with regard to", "about"),
+    (r"numerous", "numerous", "many"),
+]
+EARNED = [(re.compile(r"\b" + p + r"\b", re.I), label, plain) for p, label, plain in _EARNED]
+
+# Reflexive hedges (polish). Confidence drained by habit. Distinct category from
+# the kill list so the report reads clearly. Kept free of overlap with _PHRASE.
+_HEDGE = [
+    (r"it(?:'?s| is) worth noting(?: that)?", "it's worth noting"),
+    (r"arguably", "arguably"),
+    (r"generally speaking", "generally speaking"),
+    (r"in many cases", "in many cases"),
+    (r"it could be argued(?: that)?", "it could be argued"),
+    (r"to some extent", "to some extent"),
+    (r"in some sense", "in some sense"),
+]
+HEDGES = [(re.compile(r"\b" + p + r"\b", re.I), label) for p, label in _HEDGE]
+
+# --- rhetorical shapes -----------------------------------------------------
+
+NEG_PARALLEL = [
+    re.compile(r"\bit(?:'s| is|s)? not\b[^.;:!?]{1,80}?,\s+it(?:'s| is|s)?\b", re.I),
+    re.compile(r"\bnot only\b[^.;:!?]{1,60}?\bbut(?:\s+also)?\b", re.I),
+    re.compile(r"\bnot just\b[^.;:!?]{1,60}?\bbut\b", re.I),
+    re.compile(r"\bless about\b[^.;:!?]{1,60}?\bmore about\b", re.I),
+    re.compile(r"\bisn'?t about\b[^.;:!?]{1,60}?\b(?:it'?s|but)\b", re.I),
+    re.compile(r"\bnot\b[^.;:!?]{1,40}?\bbut rather\b", re.I),
+]
+
+_TAIL_VERBS = (
+    "highlighting|underscoring|emphasising|emphasizing|showcasing|reflecting|"
+    "demonstrating|ensuring|contributing|fostering|paving|reinforcing|"
+    "signalling|signaling|cementing|solidifying|illustrating|underlining"
+)
+PARTICIPLE_TAIL = re.compile(r",\s+(" + _TAIL_VERBS + r")\b", re.I)
+
+# en dash flagged unless it sits inside a numeric range (3-5, 2014-18)
+EN_DASH = re.compile(r"–")
+EN_DASH_RANGE = re.compile(r"\d\s*–\s*\d")
+EM_DASH = re.compile(r"—")
+# Double hyphen as an em-dash stand-in: only when it joins two words, tight
+# ("word--word") or spaced ("word -- word"). This deliberately spares CLI flags
+# ("--json"), YAML frontmatter fences and horizontal rules ("---"), and Markdown
+# table separators ("|---|"), none of which are em dashes.
+DOUBLE_HYPHEN_TIGHT = re.compile(r"(?<=[A-Za-z])--(?=[A-Za-z])")
+DOUBLE_HYPHEN_SPACED = re.compile(r"(?<=[A-Za-z] )--(?= [A-Za-z])")
+SPACED_HYPHEN = re.compile(r"(?<=[A-Za-z]) - (?=[A-Za-z])")
+SMART = {
+    "“": "curly double quote",
+    "”": "curly double quote",
+    "‘": "curly single quote",
+    "’": "curly apostrophe",
+    "′": "prime",
+    "″": "double prime",
+}
+
+
+def _add(findings, line, col, category, severity, text, message):
+    findings.append({
+        "line": line, "col": col, "category": category,
+        "severity": severity, "text": text, "message": message,
+    })
+
+
+def scan_line(lineno, line, findings):
+    # em dash: the absolute rule
+    for m in EM_DASH.finditer(line):
+        _add(findings, lineno, m.start() + 1, "em-dash", BLOCKER, "—",
+             "em dash. Restructure into commas, a full stop or parentheses. Do not swap.")
+    # en dash used as an em dash (numeric ranges exempt)
+    for m in EN_DASH.finditer(line):
+        s = m.start()
+        window = line[max(0, s - 2):s + 3]
+        if EN_DASH_RANGE.search(window):
+            continue
+        _add(findings, lineno, s + 1, "em-dash", BLOCKER, "–",
+             "en dash used as an em dash. Restructure.")
+    # double hyphen and spaced hyphen as em-dash workarounds
+    for rx in (DOUBLE_HYPHEN_TIGHT, DOUBLE_HYPHEN_SPACED):
+        for m in rx.finditer(line):
+            _add(findings, lineno, m.start() + 1, "em-dash", BLOCKER, "--",
+                 "double hyphen standing in for an em dash. Restructure.")
+    for m in SPACED_HYPHEN.finditer(line):
+        _add(findings, lineno, m.start() + 1, "em-dash", BLOCKER, " - ",
+             "spaced hyphen standing in for an em dash. Restructure.")
+    # smart quotes
+    for i, ch in enumerate(line):
+        if ch in SMART:
+            _add(findings, lineno, i + 1, "smart-quotes", POLISH, ch,
+                 SMART[ch] + ". Use a straight quote.")
+    # blacklist
+    for rx, label, sev in BLACKLIST:
+        for m in rx.finditer(line):
+            _add(findings, lineno, m.start() + 1, "blacklist", sev, m.group(0),
+                 'kill-list term "' + label + '". Replace with a plain word.')
+    # negative parallelism
+    for rx in NEG_PARALLEL:
+        for m in rx.finditer(line):
+            _add(findings, lineno, m.start() + 1, "negative-parallelism", IMPORTANT,
+                 m.group(0).strip(),
+                 "negative parallelism. State what the thing is, directly.")
+    # participle tails
+    for m in PARTICIPLE_TAIL.finditer(line):
+        _add(findings, lineno, m.start(1) + 1, "participle-tail", IMPORTANT,
+             m.group(1),
+             "participle tail faking analysis. Give the point a real sentence or cut it.")
+    # reflexive hedges
+    for rx, label in HEDGES:
+        for m in rx.finditer(line):
+            _add(findings, lineno, m.start() + 1, "hedging", POLISH, m.group(0),
+                 'reflexive hedge "' + label + '". Assert it or cut it.')
+    # earned words
+    for rx, label, plain in EARNED:
+        for m in rx.finditer(line):
+            _add(findings, lineno, m.start() + 1, "earned-word", POLISH, m.group(0),
+                 'prestige word "' + label + '". Use "' + plain +
+                 '" unless the extra meaning is earned. Advisory.')
+
+
+_SENTENCE = re.compile(r"[^.!?]+[.!?]*", re.S)
+
+
+def scan_openers(text, findings):
+    openers = {}
+    for m in _SENTENCE.finditer(text):
+        chunk = m.group(0).strip()
+        if not chunk:
+            continue
+        first = re.search(r"[A-Za-z']+", chunk)
+        if not first:
+            continue
+        key = first.group(0).lower()
+        word_pos = m.start() + first.start()
+        lineno = text.count("\n", 0, word_pos) + 1
+        openers.setdefault(key, []).append(lineno)
+    for word, lines in openers.items():
+        if len(lines) >= 3:
+            _add(findings, lines[0], 1, "repeated-opener", POLISH, word,
+                 'sentence opener "' + word + '" used ' + str(len(lines)) +
+                 " times (lines " + ", ".join(str(n) for n in lines) + "). Vary the openers.")
+
+
+def _stdev(xs):
+    n = len(xs)
+    if n < 2:
+        return 0.0
+    mean = sum(xs) / n
+    var = sum((x - mean) ** 2 for x in xs) / n
+    return var ** 0.5
+
+
+def scan_statistics(text, findings):
+    # Burstiness: low variance in sentence length reads as machine. Gated to six
+    # or more sentences and a sane mean so terse or constrained prose is spared.
+    lengths = []
+    for m in _SENTENCE.finditer(text):
+        words = re.findall(r"[A-Za-z']+", m.group(0))
+        if words:
+            lengths.append(len(words))
+    if len(lengths) >= 6:
+        mean = sum(lengths) / len(lengths)
+        sd = _stdev(lengths)
+        if 8 <= mean <= 30 and sd < 4.0:
+            _add(findings, 1, 1, "low-burstiness", IMPORTANT, "sd=%.1f" % sd,
+                 "low sentence-length variance (sd %.1f over %d sentences). Vary the rhythm. Heuristic, advisory."
+                 % (sd, len(lengths)))
+    # Lexical diversity via a moving-average type-token ratio, length-robust.
+    tokens = [t.lower() for t in re.findall(r"[A-Za-z']+", text)]
+    if len(tokens) >= 100:
+        win = 50
+        step = 1 if len(tokens) <= 4000 else 5
+        ratios = []
+        i = 0
+        while i + win <= len(tokens):
+            ratios.append(len(set(tokens[i:i + win])) / win)
+            i += step
+        if ratios:
+            mattr = sum(ratios) / len(ratios)
+            if mattr < 0.66:
+                _add(findings, 1, 1, "low-lexical-diversity", POLISH, "mattr=%.2f" % mattr,
+                     "low lexical diversity (MATTR %.2f). AI reuses a narrow vocabulary. Heuristic, advisory."
+                     % mattr)
+
+
+def scan(text):
+    findings = []
+    for i, line in enumerate(text.splitlines(), start=1):
+        scan_line(i, line, findings)
+    scan_openers(text, findings)
+    scan_statistics(text, findings)
+    findings.sort(key=lambda f: (f["line"], f["col"]))
+    return findings
+
+
+_ORDER = {BLOCKER: 0, IMPORTANT: 1, POLISH: 2}
+
+
+def report(name, findings):
+    counts = {BLOCKER: 0, IMPORTANT: 0, POLISH: 0}
+    for f in findings:
+        counts[f["severity"]] += 1
+    head = (name + ": " + str(counts[BLOCKER]) + " blocker, " +
+            str(counts[IMPORTANT]) + " important, " + str(counts[POLISH]) + " polish")
+    if not findings:
+        return head + "\n  clean."
+    lines = [head]
+    for f in sorted(findings, key=lambda f: (_ORDER[f["severity"]], f["line"], f["col"])):
+        loc = name + ":" + str(f["line"]) + ":" + str(f["col"])
+        lines.append("  " + loc + "  [" + f["severity"].upper() + "] " +
+                     f["category"] + ": " + f["message"] + '  -> "' + f["text"] + '"')
+    return "\n".join(lines)
+
+
+def main(argv):
+    as_json = False
+    paths = []
+    for a in argv:
+        if a in ("--json", "-j"):
+            as_json = True
+        elif a in ("--help", "-h"):
+            print(__doc__.strip())
+            return 0
+        else:
+            paths.append(a)
+
+    sources = []
+    real_paths = [p for p in paths if p != "-"]
+    if real_paths:
+        for p in real_paths:
+            with open(p, "r", encoding="utf-8") as fh:
+                sources.append((p, fh.read()))
+    else:
+        sources.append(("<stdin>", sys.stdin.read()))
+
+    any_finding = False
+    out = []
+    for name, text in sources:
+        findings = scan(text)
+        if findings:
+            any_finding = True
+        if as_json:
+            out.append({"source": name, "findings": findings})
+        else:
+            out.append(report(name, findings))
+
+    if as_json:
+        print(json.dumps(out, ensure_ascii=False, indent=2))
+    else:
+        print("\n\n".join(out))
+    return 1 if any_finding else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

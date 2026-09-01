@@ -1,0 +1,94 @@
+{
+  "description": "Dogfood scenarios for kanso's workflow skills. Each case is a prompt to run against a real (messy) repo plus the behaviours that must hold. Runnable by hand, or via the skill-creator plugin's eval runner.",
+  "cases": [
+    {
+      "skill": "kanso-audit",
+      "id": "audit-gates-before-editing",
+      "prompt": "/kanso-audit diff  (on a working tree containing at least one silent try/catch and one filler variable)",
+      "assertions": [
+        "Report appears before any file is edited",
+        "Findings are one-liners tagged with tier and shape (refactor / behaviour-change)",
+        "The silent try/catch is tagged behaviour-change, not refactor",
+        "Report ends with the approval gate and the turn stops there"
+      ]
+    },
+    {
+      "skill": "kanso-audit",
+      "id": "audit-clean-diff-no-gate",
+      "prompt": "/kanso-audit diff  (on a clean, well-written one-file change)",
+      "assertions": [
+        "Emits the no-change message only",
+        "No approval gate, no invented Tier 3 padding, turn ends"
+      ]
+    },
+    {
+      "skill": "kanso-audit",
+      "id": "audit-bare-yes-routing",
+      "prompt": "Reply 'y' to a mixed-shape approval gate",
+      "assertions": [
+        "Only refactor-shaped fixes are applied (via /kanso-refactor, inline)",
+        "Behaviour-change fixes are not applied on the bare yes",
+        "Phase D verification runs and the exit code is pasted"
+      ]
+    },
+    {
+      "skill": "kanso-refactor",
+      "id": "refactor-preserves-behaviour",
+      "prompt": "/kanso-refactor src/<file-with-dead-code-and-defensive-theatre>",
+      "assertions": [
+        "Dead code, tautological comments, and filler variables are removed",
+        "The error-swallowing try/catch is surfaced as a question, not silently removed",
+        "Verification command runs and the exit code is pasted",
+        "No commit is made"
+      ]
+    },
+    {
+      "skill": "kanso-refactor",
+      "id": "refactor-no-verify-command",
+      "prompt": "/kanso-refactor on a repo with no test/lint tooling",
+      "assertions": [
+        "The no-verification-command warning is emitted verbatim",
+        "The skill does not claim the refactor is verified"
+      ]
+    },
+    {
+      "skill": "kanso-commit",
+      "id": "commit-splits-and-matches-convention",
+      "prompt": "/kanso-commit  (working tree contains a bug fix and an unrelated README typo; repo history uses plain imperative subjects)",
+      "assertions": [
+        "Proposes a two-commit split and waits for confirmation",
+        "Messages match the repo convention (no Conventional Commits prefixes introduced)",
+        "Each message is shown for approval before git commit runs",
+        "No AI co-authorship trailer is added unrequested"
+      ]
+    },
+    {
+      "skill": "kanso-commit",
+      "id": "commit-asks-for-missing-why",
+      "prompt": "/kanso-commit on a non-obvious bug fix with no explanation given",
+      "assertions": [
+        "Asks the user for the why instead of inventing one"
+      ]
+    },
+    {
+      "skill": "kanso-task",
+      "id": "task-gate-before-execution",
+      "prompt": "/kanso-task make the auth better",
+      "assertions": [
+        "Asks up to three targeted questions (target, scope, constraints, done)",
+        "Shows the rewritten prompt in the approval gate and stops",
+        "Executes only after approval, inline, with kanso-principles applied",
+        "Non-trivial execution appends to implementation-notes.md"
+      ]
+    },
+    {
+      "skill": "kanso-task",
+      "id": "task-skips-clarify-when-sharp",
+      "prompt": "/kanso-task delete the unused exports in src/utils/date.ts and run the tests",
+      "assertions": [
+        "No clarifying questions are asked",
+        "The rewrite stays faithful — no added scope such as writing new tests"
+      ]
+    }
+  ]
+}
