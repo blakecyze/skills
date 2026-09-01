@@ -1,6 +1,6 @@
 ---
 name: mimesis-design
-description: Use when the user wants to know if an interface looks AI-generated, or wants the machine-made design tells stripped: "is this design AI-generated", "de-slop this UI", "does this look vibe-coded", "why does this look like every AI site". Read-only audit of supplied markup, CSS, or a described UI against the design-tells reference: purple gradients, Inter 700, three-card feature rows, glassmorphism, emoji bullets, centred everything, gradient pills. Flags each with location and severity. Not for general design critique or visual feedback unrelated to de-AI-ing an interface.
+description: "Use when the user wants to know if an interface looks AI-generated, or wants the machine-made design tells stripped: \"is this design AI-generated\", \"de-slop this UI\", \"does this look vibe-coded\", \"why does this look like every AI site\". Read-only audit of supplied markup, CSS, or a described UI against the design-tells reference: purple gradients, Inter 700, three-card feature rows, glassmorphism, emoji bullets, centred everything, gradient pills. Flags each with location and severity. Not for general design critique or visual feedback unrelated to de-AI-ing an interface."
 argument-hint: "[file/dir path | described UI]"
 allowed-tools: Bash(rg *) Bash(find *) Read
 ---

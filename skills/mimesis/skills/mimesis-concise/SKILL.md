@@ -1,6 +1,6 @@
 ---
 name: mimesis-concise
-description: Use when the user wants prose made shorter, tighter, or denser without losing meaning: "make this concise", "tighten this", "cut the fluff", "too wordy", "trim this down", "say it in fewer words". Strips throat-clearing, dutiful summaries, hedging, puffery and redundancy, keeping only what does work. Also removes em dashes and AI tells in passing. Not for expanding, explaining, or re-toning text where length is not the point.
+description: "Use when the user wants prose made shorter, tighter, or denser without losing meaning: \"make this concise\", \"tighten this\", \"cut the fluff\", \"too wordy\", \"trim this down\", \"say it in fewer words\". Strips throat-clearing, dutiful summaries, hedging, puffery and redundancy, keeping only what does work. Also removes em dashes and AI tells in passing. Not for expanding, explaining, or re-toning text where length is not the point."
 argument-hint: "[text | file path] [--mode audit|rewrite] [--target N words]"
 allowed-tools: Bash(python3 *) Read Edit Write
 ---

@@ -1,6 +1,6 @@
 ---
 name: swarm-execute
-description: Use when the user wants to run plans written by /swarm-improve, execute a plans/ backlog, or dispatch mechanical work to a cheaper model. The pair of /swarm-improve: it planned, this executes.
+description: "Use when the user wants to run plans written by /swarm-improve, execute a plans/ backlog, or dispatch mechanical work to a cheaper model. The pair of /swarm-improve: it planned, this executes."
 argument-hint: "[plans/<slug>.md | plans/ | --model <alias>]"
 disable-model-invocation: true
 allowed-tools: Bash(git *) Bash(rg *) Bash(find *)

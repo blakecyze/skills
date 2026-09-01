@@ -1,6 +1,6 @@
 ---
 name: mimesis-human
-description: Use when the user wants prose to sound human or to stop reading as AI: "humanise this", "make this sound human", "does this read as AI", "remove AI tells", "de-slop this", "make it less ChatGPT". Runs read-only audit (flag every tell with location and severity), rewrite (meaning-preserving humanisation of existing text), or generate (draft new, already-human text). Removes every em dash without exception. Not for general drafting or copy-editing unrelated to removing the machine-written texture.
+description: "Use when the user wants prose to sound human or to stop reading as AI: \"humanise this\", \"make this sound human\", \"does this read as AI\", \"remove AI tells\", \"de-slop this\", \"make it less ChatGPT\". Runs read-only audit (flag every tell with location and severity), rewrite (meaning-preserving humanisation of existing text), or generate (draft new, already-human text). Removes every em dash without exception. Not for general drafting or copy-editing unrelated to removing the machine-written texture."
 argument-hint: "[text | file path] [--mode audit|rewrite|generate] [--register professional|casual] [--gen codex]"
 allowed-tools: Bash(python3 *) Read Edit Write
 ---

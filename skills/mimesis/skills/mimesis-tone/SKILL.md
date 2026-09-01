@@ -1,6 +1,6 @@
 ---
 name: mimesis-tone
-description: Use when the user wants text written or recast in a specific named human voice: "make this sound like an expert / a practitioner", "make this warmer", "make this blunter / sharper", "make this more persuasive / sell this", "make this plainer / simpler", "give this a [tone] voice", "rewrite this in a [tone] tone". Five tones: persuasive, practitioner, warm, blunt, plain. Shapes voice while still removing AI tells and em dashes. Not for neutral de-slopping (that is mimesis-human) or pure shortening (mimesis-concise).
+description: "Use when the user wants text written or recast in a specific named human voice: \"make this sound like an expert / a practitioner\", \"make this warmer\", \"make this blunter / sharper\", \"make this more persuasive / sell this\", \"make this plainer / simpler\", \"give this a [tone] voice\", \"rewrite this in a [tone] tone\". Five tones: persuasive, practitioner, warm, blunt, plain. Shapes voice while still removing AI tells and em dashes. Not for neutral de-slopping (that is mimesis-human) or pure shortening (mimesis-concise)."
 argument-hint: "[text | file] --tone persuasive|practitioner|warm|blunt|plain [--register professional|casual]"
 allowed-tools: Bash(python3 *) Read Edit Write
 ---

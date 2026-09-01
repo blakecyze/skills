@@ -1,6 +1,6 @@
 ---
 name: mimesis-compile
-description: Use when the user wants text written for a machine reader, not a human: "write a prompt for", "compress this for an LLM", "turn this into instructions for an agent", "make this a system prompt", "compile this into a prompt". Produces dense, structured, token-efficient instructions tuned to current frontier models, with the right delimiters, constraint ordering and the instruction sandwich. AI tells are acceptable here. Bypasses the humanisation linter by design. Not for human-facing prose, which is mimesis-human's job.
+description: "Use when the user wants text written for a machine reader, not a human: \"write a prompt for\", \"compress this for an LLM\", \"turn this into instructions for an agent\", \"make this a system prompt\", \"compile this into a prompt\". Produces dense, structured, token-efficient instructions tuned to current frontier models, with the right delimiters, constraint ordering and the instruction sandwich. AI tells are acceptable here. Bypasses the humanisation linter by design. Not for human-facing prose, which is mimesis-human's job."
 argument-hint: "[intent or draft] [--model gpt|claude|gemini]"
 allowed-tools: Read Edit Write
 ---

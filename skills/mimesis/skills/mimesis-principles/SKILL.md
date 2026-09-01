@@ -1,6 +1,6 @@
 ---
 name: mimesis-principles
-description: Standing anti-tell rules for prose generated while mimesis is installed: no em dashes, no kill-list slop, no negative parallelism or participle tails, varied rhythm, a point of view. Auto-loads; not directly invoked by the user.
+description: "Standing anti-tell rules for prose generated while mimesis is installed: no em dashes, no kill-list slop, no negative parallelism or participle tails, varied rhythm, a point of view. Auto-loads; not directly invoked by the user."
 user-invocable: false
 ---
 
