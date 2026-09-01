@@ -165,9 +165,9 @@ python3 scripts/scan_tokens.py lib/ --report frequency
 
 Part of [blakecyze/skills](https://github.com/blakecyze/skills), a set of skill libraries built on the same idea: name the failure, give it a check, keep the always-loaded layer short.
 
-- [kanso](../kanso) — anti-dilution code principles
-- [mimesis](../mimesis) — human prose out, machine prose in
-- [swarm](../swarm) — agent orchestration with a cost ceiling
+- [kanso](../kanso) keeps AI-written code short and honest
+- [mimesis](../mimesis) strips AI tells from prose, in both directions
+- [swarm](../swarm) orchestrates parallel agents under a cost ceiling
 
 ## Licence
 

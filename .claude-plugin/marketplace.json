@@ -23,7 +23,7 @@
     {
       "name": "swarm",
       "source": "./skills/swarm",
-      "description": "Agent-orchestration skills for Claude Code. Fan work out in parallel, pick winners, and delegate execution to cheaper models — with a hard cost ceiling.",
+      "description": "Agent-orchestration skills for Claude Code. Fan work out in parallel, pick winners, and delegate execution to cheaper models, all under a hard cost ceiling.",
       "category": "engineering",
       "tags": ["agents", "orchestration", "parallel"]
     },

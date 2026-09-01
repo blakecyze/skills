@@ -2,7 +2,7 @@
 
 Four skill libraries for AI coding agents, built on one idea: name the failure, give it a check, keep the always-loaded layer short.
 
-A principle without a check is an opinion, and opinions do not survive contact with a diff. Every library here turns its domain's judgement calls into named, searchable violations that a model can be held to — across Claude Code, Cursor, Codex, and anything else that reads a file.
+Models already know the words for good code, good prose, and good design. Reciting principles at them changes nothing, because a principle without a check is an opinion, and opinions do not survive contact with a diff. So each library here turns its domain's judgement calls into named, checkable violations that a model can be held to. They work in Claude Code, Cursor, Codex, and anything else that reads a file.
 
 ## Install
 
@@ -20,22 +20,20 @@ Or, in Claude Code, install any library as a plugin:
 /plugin install flow@cyze
 ```
 
-Each library also stands alone — see its own README for tool-specific installers and configuration.
+Each library also stands alone. Its own README covers tool-specific installers and configuration.
 
 ## Why use it?
 
-Models already know the words for good code, good prose, and good design. Reciting principles at them changes nothing. These libraries work because each one:
-
-- **Names its failures.** `FLOW-06` means the same thing in every session and every tool.
-- **Gives every rule a check** that can be evaluated against the source, not vibes.
-- **Keeps the standing layer short.** The always-loaded principles fit on a page; everything else loads on demand.
-- **Computes what can be computed.** Contrast ratios and scale membership come from scripts, never from memory.
+- **Named failures.** `FLOW-06` means the same thing in every session and every tool, so findings stay searchable across weeks of work.
+- **A check per rule.** Every rule can be evaluated against the source. If it can't, it doesn't ship.
+- **A short standing layer.** The always-loaded principles fit on a page. Everything else loads on demand, when a finding needs it.
+- **Computed numbers.** Contrast ratios and scale membership come from scripts. A guessed number is a fabricated one.
 
 ## Reference
 
-### [kanso](skills/kanso) — code
+### [kanso](skills/kanso)
 
-Keeps AI-written code short and honest. Delete before you add, earn every line.
+Code. Keeps AI-written output short and honest: delete before you add, earn every line.
 
 | Skill | Does |
 |---|---|
@@ -49,9 +47,9 @@ Keeps AI-written code short and honest. Delete before you add, earn every line.
 | [kanso-context](skills/kanso/skills/kanso-context/SKILL.md) | Create and prune AGENTS.md / CLAUDE.md files |
 | [kanso-prompting](skills/kanso/skills/kanso-prompting/SKILL.md) | Rules for writing better prompts for frontier models |
 
-### [mimesis](skills/mimesis) — prose
+### [mimesis](skills/mimesis)
 
-Strips AI tells from writing for human readers, and compiles token-efficient instructions for machine readers.
+Prose. Strips AI tells from writing meant for people, and compiles token-efficient instructions for machines. This README went through it.
 
 | Skill | Does |
 |---|---|
@@ -62,9 +60,9 @@ Strips AI tells from writing for human readers, and compiles token-efficient ins
 | [mimesis-design](skills/mimesis/skills/mimesis-design/SKILL.md) | Spot and strip machine-made design tells from an interface |
 | [mimesis-compile](skills/mimesis/skills/mimesis-compile/SKILL.md) | Dense, structured instructions for machine readers |
 
-### [swarm](skills/swarm) — orchestration
+### [swarm](skills/swarm)
 
-Fans work out to parallel agents, picks winners, and delegates execution to cheaper models, under a hard cost ceiling.
+Orchestration. Fans work out to parallel agents, picks winners, and delegates execution to cheaper models, all under a hard cost ceiling.
 
 | Skill | Does |
 |---|---|
@@ -76,9 +74,9 @@ Fans work out to parallel agents, picks winners, and delegates execution to chea
 | [swarm-bulldoze](skills/swarm/skills/swarm-bulldoze/SKILL.md) | Best-of-N: try several approaches, keep the winner |
 | [swarm-refine](skills/swarm/skills/swarm-refine/SKILL.md) | Parallel critics attack one artefact from several angles |
 
-### [flow](skills/flow) — design
+### [flow](skills/flow)
 
-Diagnostic, not generative. Passes an intent gate before touching styling, cites findings from a twelve-item taxonomy, and computes contrast and scale adherence rather than estimating them.
+Design. Diagnostic, not generative: it passes an intent gate before touching styling, cites findings from a twelve-item taxonomy, and computes contrast and scale adherence rather than estimating them.
 
 | Skill | Does |
 |---|---|
@@ -91,13 +89,13 @@ Diagnostic, not generative. Passes an intent gate before touching styling, cites
 
 ```
 skills/
-  kanso/      code   — anti-dilution principles, audits, refactors
-  mimesis/    prose  — anti-tell rules, humanising, prompt compiling
-  swarm/      agents — parallel fan-out, winner-picking, delegation
-  flow/       design — intent gate, violation taxonomy, computed checks
+  kanso/      code
+  mimesis/    prose
+  swarm/      agents
+  flow/       design
 ```
 
-Each library is a complete Claude Code plugin with its own README, changelog, and licence. The standalone repos ([kanso](https://github.com/blakecyze/kanso), [mimesis](https://github.com/blakecyze/mimesis), [swarm](https://github.com/blakecyze/swarm)) remain live; this repo is the front door.
+Each library is a complete Claude Code plugin with its own README, changelog, and licence. The standalone repos ([kanso](https://github.com/blakecyze/kanso), [mimesis](https://github.com/blakecyze/mimesis), [swarm](https://github.com/blakecyze/swarm)) remain live. This repo is the front door.
 
 ## Licence
 
