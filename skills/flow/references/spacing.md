@@ -55,3 +55,15 @@ For stacked text, prefer setting the gap on the container rather than adding mar
 - Nesting three padded containers so the effective inner padding is 48 and nobody intended it (FLOW-10)
 - Spacing derived from a component's height rather than the ramp
 - Negative margins used to undo padding applied by a parent
+
+## The little things
+
+Craft details for `flow-layout`. Substance adapted from jakub.kr/skills (better-layout).
+
+- **Edges.** Pick alignment edges and hold them; every stray edge reads as noise. Logical properties (`padding-inline-start`) over physical ones, so RTL comes free.
+- **Controls look like controls.** Every interactive element carries a background shape, a border, or a consistent placement zone. A control styled like the static text beside it does not read as one.
+- **Breathing room.** Bordered or filled controls want around 12px between them; borderless ones want roughly 24px, because nothing else separates them.
+- **Edge-to-edge, inset controls.** Backgrounds and media may run to the viewport edge; controls stay inside the layout margins. A full-width mobile button is inset 16px with its radius visible.
+- **Disclosure needs an affordance.** Scrollable overflow shows a 16 to 32px peek of the next item or a visible control; hidden content with no cue is FLOW-11's empty-state cousin.
+- **Breakpoints come from content**, not device names; components adapt with container queries.
+- **Checks.** Every supported width, 200% zoom, and an RTL mirror. Text containers never get fixed widths; translations grow.

@@ -67,3 +67,17 @@ Respect `prefers-reduced-motion`. Reduced does not mean removed: replace movemen
 - Full-page spinners that discard scroll position and layout
 - An error toast that vanishes before it can be read, with no way to recall it
 - Animation on every card entrance, which reads as generated rather than designed
+
+## The little things
+
+Craft details for `flow-access`. Substance adapted from jakub.kr/skills (better-accessibility).
+
+- **Native first.** `<button>` for actions, `<a href>` for navigation; a `<div onClick>` is a Tier 1 finding. No ARIA beats bad ARIA.
+- **Focus.** `:focus-visible` with at least a 2px solid perimeter, checked against every adjacent colour and forced-colors mode. An outline removed without a verified replacement is Tier 1.
+- **Keyboard parity.** Every pointer interaction has a keyboard path. `tabindex` is 0 or -1, nothing else; composite widgets rove.
+- **Targets.** 24px square minimum, 44px touch and 40px desktop preferred; extend with pseudo-elements; decorative overlays get `pointer-events: none`.
+- **Forms.** Every input has a `<label for>`; placeholders are not labels. `autocomplete`, `name`, `type`, and `inputmode` set; paste never blocked; validate on submit and mark failures `aria-invalid="true"` with `aria-describedby` pointing at the message; submit stays enabled until the request starts.
+- **Announcements.** `role="status"` for polite updates, `role="alert"` for urgent errors only, and the live region exists before the update lands.
+- **Not colour alone.** Every status carries a second cue: icon, text, weight.
+- **Structure.** One `<h1>`, properly nested headings, one `<main>`, skip-link first when navigation is long. 200% zoom and 320px width without horizontal scroll.
+- **Media and motion.** Autoplay gets a visible pause; movement respects `prefers-reduced-motion` (see `motion.md`). Alt text names the purpose: "Search", not "magnifying glass".

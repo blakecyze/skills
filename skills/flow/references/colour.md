@@ -72,3 +72,15 @@ Shadows should be soft, low-opacity, and vertically offset, because light comes 
 - Grey text on a grey background at 3.1:1 because it "looked softer"
 - Twelve one-off hex values that are all almost the same grey
 - A dark theme built by inverting the light ramp, with saturated accents left untouched
+
+## The little things
+
+Craft details for `flow-colour`. Substance adapted from jakub.kr/skills (better-colors).
+
+- **The token seam.** Primitives name hues (`--blue-500`) and are never applied to components; semantic tokens name jobs (`--color-text-secondary`) and are the only thing components reference. This seam is what makes theming possible. A token named for its appearance or its first use is a finding.
+- **OKLCH by default** for new systems; its numbers behave the way the ramp rules above describe. Whatever the space, one notation per codebase; hex sprinkled among `oklch()` is a consistency finding.
+- **Ramp shape.** Vividness peaks mid-ramp and tapers at both ends; steps sit denser at the light end, wider at the dark.
+- **Gradients.** Interpolate `in oklab` by default; `in oklch` when vividness between two hues must survive the midpoint. The sRGB default greys out the middle.
+- **Contrast is measured against what actually renders**, opacity and underlays included, with `scripts/contrast.py`. A failure is reported as pair, measured value, and the threshold missed.
+- **Dark mode.** Inversion is a starting point only: reduce vividness, widen the dark end, re-measure every pair. One switching mechanism per product.
+- **P3.** Declare sRGB first, override inside `@media (color-gamut: p3)`.

@@ -71,3 +71,19 @@ Large type needs tighter letter spacing than small type. A face set at 48px with
 - Using size to signal importance when the element is already isolated by space
 - A heading and its body text at the same weight and the same colour, distinguished only by 2px of size
 - Full-width body text in a wide container (FLOW-12)
+
+## The little things
+
+Craft details for `flow-type`. Substance adapted from jakub.kr/skills (better-typography).
+
+- **Floors.** Body 16px for long-form; UI text 14px for inputs and menus, 13px for captions, rarely below 12px. Inputs are 16px on mobile or iOS Safari zooms the page.
+- **Weights.** Below 18px stay at 400 or heavier; weights under 300 are display-only at 28px and up.
+- **Line height.** Headings around 1.1; body 1.5 to 1.6; anything wrapping to three or more lines at least 1.4. Unitless values only.
+- **Letter spacing.** Slightly negative on large headings, slightly positive on small uppercase labels, untouched at body sizes.
+- **Wrapping.** `text-wrap: balance` on headings, `text-wrap: pretty` on descriptions, `overflow-wrap: break-word` where long IDs and URLs could escape, `white-space: nowrap` on labels and badges.
+- **Numbers.** `font-variant-numeric: tabular-nums` on anything that changes: timers, counters, prices.
+- **Truncation.** One line: ellipsis with hidden overflow and nowrap. Several: `line-clamp`. Truncation with no way to reach the full value is FLOW-11 territory.
+- **Underlines.** `text-underline-position: from-font`, `text-decoration-thickness: from-font`, `text-decoration-skip-ink: auto`; dotted decoration for extra-info hints; colour is the only underline property that animates reliably.
+- **OpenType.** Prefer the dedicated properties (`font-optical-sizing: auto`, `font-variant-numeric`) over raw `font-feature-settings`; raw tags are for custom axes only.
+- **Loading.** Ship `.woff2`; load the actual faces the design uses rather than letting the browser synthesise bold or italic.
+- **Punctuation.** Curly quotes in prose, straight in code; en dash for ranges (2010–2020); a single ellipsis character; `&nbsp;` keeps a value and its unit together.

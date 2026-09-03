@@ -29,11 +29,11 @@ If the source material does not supply enough to answer these, ask. One question
 
 Every finding carries a tier. Tiers drive ordering and drive what gets fixed first.
 
-**Tier 1 — Blocking.** The interface fails a user outright. Contrast below WCAG AA, touch targets under the platform minimum, no visible focus state, text truncated with no recovery, an action that gives no feedback.
+**Tier 1, blocking.** The interface fails a user outright. Contrast below WCAG AA, touch targets under the platform minimum, no visible focus state, text truncated with no recovery, an action that gives no feedback.
 
-**Tier 2 — Structural.** The interface works but misleads. Hierarchy inverted, grouping contradicts meaning, primary action indistinguishable from secondary, reading order fights layout order.
+**Tier 2, structural.** The interface works but misleads. Hierarchy inverted, grouping contradicts meaning, primary action indistinguishable from secondary, reading order fights layout order.
 
-**Tier 3 — Consistency.** The interface is coherent but untidy. Off-scale values, duplicate near-identical styles, inconsistent radii or weights.
+**Tier 3, consistency.** The interface is coherent but untidy. Off-scale values, duplicate near-identical styles, inconsistent radii or weights.
 
 **The signal rule:** if Tier 1 and Tier 2 findings are fewer than 60% of the total, the review is generating noise. Cut Tier 3 until the ratio holds, or drop the Tier 3 section.
 
@@ -63,7 +63,8 @@ Twelve named violations. Cite the ID in every finding. Each carries a check that
 - **One change, one reason.** Every edit traces to a taxonomy ID. No ID, no edit.
 - **Preserve voice.** A coherent style that is not to your taste is not a finding.
 - **Numbers come from `scripts/`, never memory.** A model-guessed contrast ratio is a fabricated one.
-- **Appearance only.** Never change behaviour, state, routing, data flow, copy, or brand identity.
+- **Appearance only.** Never change behaviour, state, routing, or data flow. Interface copy changes belong to `flow-copy` alone; brand identity belongs to nobody.
+- **The polish layer.** Six domain skills (`flow-surface`, `flow-type`, `flow-colour`, `flow-layout`, `flow-access`, `flow-copy`) apply craft details within one domain each, under the contract in `references/polish.md`. `flow-polish` runs them all.
 
 ## Reference layer
 
@@ -78,4 +79,7 @@ Load only when a finding needs it. Do not read speculatively.
 | `references/flutter.md` | the target is Flutter or Dart |
 | `references/web.md` | the target is HTML, CSS, React, or similar |
 | `references/motion.md` | the target animates, or any FLOW-M finding (see `flow-motion`) |
+| `references/polish.md` | any polish-layer skill runs |
+| `references/surface.md` | `flow-surface` runs, or a radius/depth/icon finding |
+| `references/copy.md` | `flow-copy` runs |
 | `tokens/flow.defaults.json` | no project token set was found |

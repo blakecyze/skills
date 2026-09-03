@@ -46,6 +46,18 @@ Full definitions, checks, and fixes: [`skills/flow-principles/SKILL.md`](skills/
 | `flow-apply` | Repairs violations, appearance only | yes |
 | `flow-tokens` | Discovers a project's real scale, writes `flow.config.json` | one file |
 | `flow-motion` | Builds and audits animation via a gate and the FLOW-M taxonomy | yes (motion only) |
+| `flow-polish` | Runs every domain polish pass below over one scope, one gate | yes, on approval |
+| `flow-surface` | Radii concentricity, optical alignment, depth, icons, press, hit areas | yes, on approval |
+| `flow-type` | Size floors, wrapping, tabular numbers, truncation, underlines | yes, on approval |
+| `flow-colour` | Ramps, the token seam, OKLCH, gradients, measured contrast, dark mode | yes, on approval |
+| `flow-layout` | Edges, control affordance, disclosure cues, logical properties, adaptivity | yes, on approval |
+| `flow-access` | Focus, keyboard parity, targets, forms, live regions, structure | yes, on approval |
+| `flow-copy` | Buttons, errors, empty states, toggles, tone; the only skill that edits strings | yes (strings only) |
+| `flow-variant` | Three named design directions on one axis, rendered in situ, user picks | rig only |
+| `flow-stress` | One component across every realistic scenario on a throwaway page | rig only |
+| `flow-explain` | Takes an interface apart in words; teaches, changes nothing | no |
+
+The polish skills run independently, are idempotent (a second run over polished code proposes nothing), and share one contract: findings first, one approval gate, the repo's conventions beat Flow's defaults. The craft substance of the polish layer adapts [jakub.kr/skills](https://jakub.kr/skills) into Flow's diagnostic form, in Flow's own words.
 
 Run `flow-tokens` first on an unfamiliar codebase. Without it, Flow measures your project against its own defaults, and every finding becomes noise.
 
@@ -58,7 +70,7 @@ Run `flow-tokens` first on an unfamiliar codebase. Without it, Flow measures you
 /plugin install flow@cyze
 ```
 
-`flow-principles` loads itself for UI work. The other three are invoked by name: `/flow-audit`, `/flow-apply`, `/flow-tokens`.
+`flow-principles` loads itself for UI work. Everything else is invoked by name: `/flow-audit`, `/flow-apply`, `/flow-tokens`, `/flow-motion`, `/flow-polish`, the six domain passes, `/flow-variant`, `/flow-stress`, `/flow-explain`.
 
 To develop against a local checkout instead:
 
@@ -108,8 +120,15 @@ flow/
     flow-audit/         # read-only review
     flow-apply/         # repair, appearance only
     flow-tokens/        # scale discovery
+    flow-motion/        # animation gate and FLOW-M taxonomy
+    flow-polish/        # all six domain passes, one gate
+    flow-{surface,type,colour,layout,access,copy}/   # the domain passes
+    flow-variant/       # named directions, user picks
+    flow-stress/        # one component, every scenario
+    flow-explain/       # read-only teardown
   references/           # tier 2: loaded on demand, one per domain
     spacing.md  type.md  colour.md  interaction.md
+    surface.md  copy.md  motion.md  polish.md
     flutter.md  web.md
   tokens/               # tier 3: never paraphrased, only read
     flow.defaults.json

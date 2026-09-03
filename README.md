@@ -87,6 +87,16 @@ Design. Diagnostic, not generative: it passes an intent gate before touching sty
 | [flow-apply](skills/flow/skills/flow-apply/SKILL.md) | Repairs violations, appearance only |
 | [flow-tokens](skills/flow/skills/flow-tokens/SKILL.md) | Discovers a project's real scale, writes `flow.config.json` |
 | [flow-motion](skills/flow/skills/flow-motion/SKILL.md) | Builds and audits animation via a gate and the FLOW-M taxonomy |
+| [flow-polish](skills/flow/skills/flow-polish/SKILL.md) | Runs every domain polish pass over one scope, one gate |
+| [flow-surface](skills/flow/skills/flow-surface/SKILL.md) | Radii, optical alignment, depth, icons, press feedback, hit areas |
+| [flow-type](skills/flow/skills/flow-type/SKILL.md) | Size floors, wrapping, tabular numbers, truncation, underlines |
+| [flow-colour](skills/flow/skills/flow-colour/SKILL.md) | Ramps, tokens, OKLCH, gradients, measured contrast, dark mode |
+| [flow-layout](skills/flow/skills/flow-layout/SKILL.md) | Edges, control affordance, disclosure cues, adaptivity |
+| [flow-access](skills/flow/skills/flow-access/SKILL.md) | Focus, keyboard parity, targets, forms, live regions, structure |
+| [flow-copy](skills/flow/skills/flow-copy/SKILL.md) | Buttons, errors, empty states, toggles; the only string editor |
+| [flow-variant](skills/flow/skills/flow-variant/SKILL.md) | Three named design directions on one axis, rendered in situ |
+| [flow-stress](skills/flow/skills/flow-stress/SKILL.md) | One component across every realistic scenario on a throwaway page |
+| [flow-explain](skills/flow/skills/flow-explain/SKILL.md) | Takes an interface apart in words; teaches, changes nothing |
 
 ## Layout
 

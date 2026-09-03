@@ -1,5 +1,14 @@
 # Changelog
 
+## 2.0.0
+
+The polish layer. Ten new skills adapting the craft substance of [jakub.kr/skills](https://jakub.kr/skills) into Flow's diagnostic form, in Flow's own words.
+
+- Domain passes, independently invocable and idempotent, under one contract (`references/polish.md`): `flow-surface`, `flow-type`, `flow-colour`, `flow-layout`, `flow-access`, `flow-copy`. `flow-polish` runs them all with one merged report and gate.
+- Workflow skills: `flow-variant` (three named directions on one axis, rendered in situ, user picks, rig deleted after), `flow-stress` (one component across every realistic scenario on a throwaway page that stays as half the report), `flow-explain` (read-only construction teardown).
+- References: new `polish.md`, `surface.md`, `copy.md`; "The little things" sections appended to `type.md`, `colour.md`, `spacing.md`, `interaction.md`.
+- `flow-principles`: copy boundary moved from "never rewrite copy" to "copy changes belong to `flow-copy` alone"; reference table extended. Major version for that boundary change.
+
 ## 1.2.0
 
 - `flow-motion`: builds and audits animation. A motion gate (frequency tier plus a named purpose) that can and should produce zero lines of code, eight named violations (`FLOW-M1` to `FLOW-M8`), and a build path whose curves, durations, and spring configs are quoted from the reference, never recalled. Adapts Emil Kowalski's animation philosophy (animations.dev) into Flow's diagnostic form.
