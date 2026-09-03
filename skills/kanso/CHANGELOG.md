@@ -2,6 +2,12 @@
 
 All notable changes to kanso are recorded here. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning follows [SemVer](https://semver.org/).
 
+## [0.5.0] — 2026-09-03
+
+### Added
+
+- `kanso-council`: multi-engine audit. Detects codex, cursor-agent (grok), claude, and gemini CLIs, runs kanso-audit's Phase A framework on each in parallel inside disposable git worktrees (trap-guaranteed cleanup), and merges the reports into one consensus-weighted findings list. Lone Tier 1 findings stand, lone Tier 3 findings drop, disagreements surface under a Disputed heading instead of being averaged. Model selection is version-proof: family aliases and CLI defaults only, so a new model generation needs no edits. The approval gate and Phases B, C, D remain kanso-audit's.
+
 ## [0.4.1] — 2026-07-08
 
 ### Added

@@ -39,6 +39,7 @@ Code. Keeps AI-written output short and honest: delete before you add, earn ever
 |---|---|
 | [kanso-principles](skills/kanso/skills/kanso-principles/SKILL.md) | Standing anti-dilution rules for all code work. Auto-loads. |
 | [kanso-audit](skills/kanso/skills/kanso-audit/SKILL.md) | Code review and pattern analysis of a diff, branch, or codebase |
+| [kanso-council](skills/kanso/skills/kanso-council/SKILL.md) | The audit run by every agent CLI on the machine, merged by consensus |
 | [kanso-refactor](skills/kanso/skills/kanso-refactor/SKILL.md) | Clean up, tighten, and de-bloat code |
 | [kanso-nuclear](skills/kanso/skills/kanso-nuclear/SKILL.md) | Deep structural audit of a whole codebase |
 | [kanso-task](skills/kanso/skills/kanso-task/SKILL.md) | Sharpen a rough request before running it, carefully |

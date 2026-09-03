@@ -31,6 +31,7 @@ One honest caveat: the edit-verify hook (the thing that lint-checks each edit as
 | `kanso-prompting` | Rules for turning a rough ask into a sharp prompt. | auto (via task) |
 | `kanso-task` | Sharpens your request, then runs it with the principles loaded. | `/kanso-task [request]` |
 | `kanso-audit` | Reviews code, shows findings, proposes fixes before touching a thing. | `/kanso-audit [scope]` |
+| `kanso-council` | The audit, run by every agent CLI on your machine at once, merged by consensus. | `/kanso-council [scope]` |
 | `kanso-nuclear` | The big structural review: file sprawl, spaghetti, abstraction theatre. | `/kanso-nuclear [scope]` |
 | `kanso-refactor` | Cleanup that never changes behaviour. The two never mix. | `/kanso-refactor [scope]` |
 | `kanso-commit` | Atomic commits with messages that say *why*. | `/kanso-commit` |
