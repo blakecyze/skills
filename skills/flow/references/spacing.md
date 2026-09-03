@@ -1,6 +1,6 @@
 # Spacing
 
-Loaded for FLOW-01, FLOW-03, FLOW-08, FLOW-10.
+Loaded for FLOW-01, FLOW-03, FLOW-08, FLOW-10. Gestalt: proximity (01, 03) and common region (10).
 
 ## The ramp
 

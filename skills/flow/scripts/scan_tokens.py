@@ -4,6 +4,7 @@
   scan_tokens.py lib/
   scan_tokens.py lib/ --config flow.config.json
   scan_tokens.py lib/ --report frequency
+  scan_tokens.py lib/ --top 30
 """
 
 import argparse
@@ -13,27 +14,37 @@ import sys
 from collections import Counter, defaultdict
 from pathlib import Path
 
-SOURCE_SUFFIXES = {".dart", ".css", ".scss", ".ts", ".tsx", ".js", ".jsx", ".html", ".vue", ".svelte"}
-SKIP_DIRS = {"node_modules", "build", "dist", ".git", ".dart_tool", "vendor", "coverage", ".next"}
-SKIP_SUFFIXES = (".g.dart", ".freezed.dart", ".min.css", ".min.js")
+from flowlib import COLOUR, NUMBER, canonical, site, source_files
+
+STYLE_SUFFIXES = {".css", ".scss", ".html"}
+CODE_SUFFIXES = {".ts", ".tsx", ".js", ".jsx", ".vue", ".svelte"}
 
 SPACING_PROPS = r"padding|margin|gap|spacing|inset|top|left|right|bottom|width|height|size"
-PATTERNS = {
-    "spacing": [
-        re.compile(rf"\b(?:{SPACING_PROPS})[A-Za-z]*\s*[:=]\s*(\d+(?:\.\d+)?)\b", re.I),
-        re.compile(r"\bEdgeInsets\.(?:all|symmetric|only|fromLTRB)\(([^)]*)\)"),
-        re.compile(rf"\b(?:{SPACING_PROPS})[a-z-]*\s*:\s*(-?\d+(?:\.\d+)?)(?:px|rem)", re.I),
-    ],
-    "type": [
-        re.compile(r"\bfont-?[Ss]ize\s*[:=]\s*(\d+(?:\.\d+)?)(?:px|rem)?", re.I),
-    ],
-    "radius": [
-        re.compile(r"\b(?:border-?[Rr]adius|circular|Radius\.circular)\s*[:=(]\s*(\d+(?:\.\d+)?)", re.I),
-    ],
-}
+
+# Stylesheets: a bare number after a spacing property is a design value.
+# Code: it is usually geometry, so require a unit or a Tailwind arbitrary value.
+UNITLESS_SPACING = re.compile(rf"\b(?:{SPACING_PROPS})[A-Za-z]*\s*[:=]\s*(\d+(?:\.\d+)?)\b", re.I)
+UNIT_SPACING = re.compile(rf"\b(?:{SPACING_PROPS})[a-z-]*\s*:\s*(-?\d+(?:\.\d+)?)(?:px|rem)", re.I)
+EDGE_INSETS = re.compile(r"\bEdgeInsets\.(?:all|symmetric|only|fromLTRB)\(([^)]*)\)")
+SIZED_BOX = re.compile(r"\b(?:SizedBox|Gap)\(\s*(?:(?:width|height):\s*)?(\d+(?:\.\d+)?)")
+FONT_SIZE = re.compile(r"\bfont-?[Ss]ize\s*[:=]\s*(\d+(?:\.\d+)?)(?:px|rem)?", re.I)
+RADIUS = re.compile(r"\b(?:border-?[Rr]adius|circular|Radius\.circular)\s*[:=(]\s*(\d+(?:\.\d+)?)", re.I)
 ARBITRARY = re.compile(r"(?:\[|\()(\d+(?:\.\d+)?)(px|rem)(?:\]|\))")
-COLOUR = re.compile(r"#[0-9a-fA-F]{3,8}\b|0x[0-9a-fA-F]{8}\b|rgba?\([^)]*\)")
-NUMBER = re.compile(r"-?\d+(?:\.\d+)?")
+
+PATTERNS = {
+    "style": {"spacing": [UNITLESS_SPACING, UNIT_SPACING], "type": [FONT_SIZE], "radius": [RADIUS]},
+    "code": {"spacing": [UNIT_SPACING], "type": [FONT_SIZE], "radius": [RADIUS]},
+    ".dart": {"spacing": [EDGE_INSETS, SIZED_BOX], "type": [FONT_SIZE], "radius": [RADIUS]},
+}
+SPACING_FLOOR = 3  # 1 and 2 are hairlines, borders, z-index, and opacity, not spacing
+
+
+def patterns_for(path):
+    if path.suffix in STYLE_SUFFIXES:
+        return PATTERNS["style"]
+    if path.suffix in CODE_SUFFIXES:
+        return PATTERNS["code"]
+    return PATTERNS.get(path.suffix, PATTERNS["code"])
 
 
 def load_scale(config_path):
@@ -53,34 +64,6 @@ def load_scale(config_path):
     }
 
 
-def canonical(literal):
-    """0xFFA1A1AA, #a1a1aa and rgb(161,161,170) are one colour, not three."""
-    text = literal.strip().upper()
-    if text.startswith("RGB"):
-        parts = NUMBER.findall(text)[:3]
-        return "#" + "".join(f"{int(float(p)):02X}" for p in parts)
-    digits = text.lstrip("#")
-    if digits.startswith("0X"):
-        digits = digits[2:]
-    if len(digits) == 8:
-        digits = digits[2:]
-    if len(digits) == 3:
-        digits = "".join(c * 2 for c in digits)
-    return f"#{digits}"
-
-
-def source_files(root):
-    root = Path(root)
-    if root.is_file():
-        return [root]
-    return [
-        p for p in sorted(root.rglob("*"))
-        if p.suffix in SOURCE_SUFFIXES
-        and not SKIP_DIRS & set(p.parts)
-        and not p.name.endswith(SKIP_SUFFIXES)
-    ]
-
-
 def normalise(raw, line):
     """rem values are px at a 16px root; everything else is taken literally."""
     value = float(raw)
@@ -92,57 +75,75 @@ def normalise(raw, line):
 def scan(root):
     hits = defaultdict(list)
     colours = defaultdict(list)
-    for path in source_files(root):
+    files = source_files(root)
+    for path in files:
+        patterns = patterns_for(path)
         for number, line in enumerate(path.read_text(errors="ignore").splitlines(), 1):
-            site = f"{path}:{number}"
-            for kind, patterns in PATTERNS.items():
-                for pattern in patterns:
+            where = f"{site(path, root)}:{number}"
+            for kind, kind_patterns in patterns.items():
+                for pattern in kind_patterns:
                     for match in pattern.findall(line):
                         for raw in NUMBER.findall(match):
-                            hits[kind].append((normalise(raw, line), site))
+                            value = normalise(raw, line)
+                            if kind == "spacing" and abs(value) < SPACING_FLOOR:
+                                continue
+                            hits[kind].append((value, where))
             for raw, unit in ARBITRARY.findall(line):
-                hits["spacing"].append((normalise(raw, unit), site))
+                hits["spacing"].append((normalise(raw, unit), where))
             for match in COLOUR.findall(line):
-                colours[canonical(match)].append(site)
-    return hits, colours
+                try:
+                    colours[canonical(match)].append(where)
+                except ValueError:
+                    continue
+    return hits, colours, len(files)
 
 
-def report_violations(hits, colours, scale, threshold):
-    total = 0
-    print("## Scale adherence\n")
+def report_violations(hits, colours, scale, threshold, top):
+    off_scale = {}
     for kind in ("spacing", "type", "radius"):
-        off = Counter(v for v, _ in hits[kind] if v not in scale[kind])
-        if not off:
-            continue
         sites = defaultdict(list)
-        for value, site in hits[kind]:
+        for value, where in hits[kind]:
             if value not in scale[kind]:
-                sites[value].append(site)
+                sites[value].append(where)
+        if sites:
+            off_scale[kind] = sites
 
+    total = sum(len(s) for kind in off_scale.values() for s in kind.values())
+    distinct = sum(len(kind) for kind in off_scale.values())
+    print(f"**{total} off-scale values, {distinct} distinct, {len(colours)} literal colours.** "
+          f"Showing the top {top} per kind; singletons are counted, not listed.\n")
+
+    for kind, sites in off_scale.items():
+        ranked = sorted(sites.items(), key=lambda kv: -len(kv[1]))
+        listed = [(v, s) for v, s in ranked if len(s) > 1][:top]
+        singles = sum(1 for _, s in ranked if len(s) == 1)
+        hidden = len(ranked) - len(listed) - singles
+        if not listed:
+            print(f"### {kind.title()} — FLOW-04: {singles} singletons only, nothing repeated.\n")
+            continue
         print(f"### {kind.title()} — FLOW-04\n")
-        print("| Value | Count | Nearest on scale | Status | First seen |")
+        print("| Value | Count | Nearest | Status | First seen |")
         print("|---|---|---|---|---|")
-        for value, count in off.most_common():
+        for value, where in listed:
             nearest = min(scale[kind], key=lambda s: abs(s - value))
-            status = "de facto token — promote or migrate" if count >= threshold else "drift — snap"
-            print(f"| `{value}` | {count} | `{nearest}` | {status} | `{sites[value][0]}` |")
-            total += count
+            status = "de facto — promote or migrate" if len(where) >= threshold else "drift — snap"
+            print(f"| `{value}` | {len(where)} | `{nearest}` | {status} | `{where[0]}` |")
+        tail = []
+        if hidden:
+            tail.append(f"{hidden} more repeated values")
+        if singles:
+            tail.append(f"{singles} singletons")
+        if tail:
+            print(f"\n+{', '.join(tail)}. Run `--report frequency` or raise `--top` to see them.")
         print()
 
-    hardcoded = {c: s for c, s in colours.items() if len(s) >= 1}
-    if hardcoded:
-        print(f"### Hardcoded colours — FLOW-09\n")
-        print(f"{len(hardcoded)} distinct literal colours across {sum(len(s) for s in hardcoded.values())} sites.\n")
-        print("| Colour | Count | First seen |")
-        print("|---|---|---|")
-        for colour, sites in sorted(hardcoded.items(), key=lambda kv: -len(kv[1]))[:20]:
-            print(f"| `{colour}` | {len(sites)} | `{sites[0]}` |")
-        print()
-
-    print(f"**{total} off-scale values.** Run with `--report frequency` to see the full picture before migrating.")
+    if colours:
+        sites = sum(len(s) for s in colours.values())
+        print(f"### Colours — FLOW-09\n\n{len(colours)} distinct literal colours across {sites} sites. "
+              "Run `contrast.py --scan` for ratios and locations.")
 
 
-def report_frequency(hits):
+def report_frequency(hits, top):
     print("## Value frequency\n")
     for kind in ("spacing", "type", "radius"):
         counts = Counter(v for v, _ in hits[kind])
@@ -151,8 +152,10 @@ def report_frequency(hits):
         print(f"### {kind.title()}\n")
         print("| Value | Count |")
         print("|---|---|")
-        for value, count in counts.most_common(25):
+        for value, count in counts.most_common(top):
             print(f"| `{value}` | {count} |")
+        if len(counts) > top:
+            print(f"\n+{len(counts) - top} more values.")
         print()
 
 
@@ -163,13 +166,15 @@ def main():
     parser.add_argument("--report", choices=("violations", "frequency"), default="violations")
     parser.add_argument("--threshold", type=int, default=10,
                         help="uses above which an off-scale value counts as a de facto token")
+    parser.add_argument("--top", type=int, default=15, help="rows per table")
     args = parser.parse_args()
 
-    hits, colours = scan(args.path)
+    hits, colours, file_count = scan(args.path)
+    print(f"## Scan: {args.path} ({file_count} files)\n")
     if args.report == "frequency":
-        report_frequency(hits)
+        report_frequency(hits, args.top)
     else:
-        report_violations(hits, colours, load_scale(args.config), args.threshold)
+        report_violations(hits, colours, load_scale(args.config), args.threshold, args.top)
     return 0
 
 

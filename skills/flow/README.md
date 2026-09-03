@@ -41,10 +41,11 @@ Full definitions, checks, and fixes: [`skills/flow-principles/SKILL.md`](skills/
 
 | Skill | Does | Edits files |
 |---|---|---|
-| `flow-principles` | Standing context. Taxonomy and intent gate. Auto-loads. | no |
+| `flow-principles` | Standing context. Taxonomy and intent gate. Loads for UI work. | no |
 | `flow-audit` | Read-only review, tiered findings report | no |
 | `flow-apply` | Repairs violations, appearance only | yes |
 | `flow-tokens` | Discovers a project's real scale, writes `flow.config.json` | one file |
+| `flow-motion` | Builds and audits animation via a gate and the FLOW-M taxonomy | yes (motion only) |
 
 Run `flow-tokens` first on an unfamiliar codebase. Without it, Flow measures your project against its own defaults, and every finding becomes noise.
 
@@ -57,7 +58,7 @@ Run `flow-tokens` first on an unfamiliar codebase. Without it, Flow measures you
 /plugin install flow@cyze
 ```
 
-`flow-principles` then loads automatically for UI work. The other three are invoked by name: `/flow-audit`, `/flow-apply`, `/flow-tokens`.
+`flow-principles` loads itself for UI work. The other three are invoked by name: `/flow-audit`, `/flow-apply`, `/flow-tokens`.
 
 To develop against a local checkout instead:
 
@@ -102,7 +103,7 @@ Paste `skills/flow-principles/SKILL.md` into whatever standing-context box the t
 ```
 flow/
   .claude-plugin/       # plugin manifest and marketplace catalogue
-  skills/               # tier 1: the always-loaded rules
+  skills/               # tier 1: the rules, loaded per task
     flow-principles/    # taxonomy and intent gate, canonical
     flow-audit/         # read-only review
     flow-apply/         # repair, appearance only
@@ -118,7 +119,7 @@ flow/
   install.sh            # one command for tools without a plugin system
 ```
 
-Three tiers, and the tier decides the format. Tier 1 costs tokens on every call, so it is kept to roughly a page. Tier 2 holds judgement calls, which need prose, and loads only when a finding needs it. Tier 3 holds numbers, which a model must never write from memory.
+Three tiers, and the tier decides the format. Tier 1 costs its one-line description on every call and its body whenever UI work starts, so the body is kept to roughly a page and the taxonomy is a table. Tier 2 holds judgement calls, which need prose, and loads only when a finding needs it. Tier 3 holds numbers, which a model must never write from memory. Scanner output is capped and paths are relative, so a scan costs a bounded number of tokens however large the tree.
 
 ## Configuration
 
@@ -146,7 +147,7 @@ python3 scripts/contrast.py "#A1A1AA" "#FFFFFF"
 # Every colour in a tree, against the extreme backgrounds
 python3 scripts/contrast.py --scan lib/ --config flow.config.json
 
-# Values that escape the scale
+# Values that escape the scale (top 15 per kind; --top 40 for more)
 python3 scripts/scan_tokens.py lib/
 
 # What the scale actually is, as opposed to what the theme file claims

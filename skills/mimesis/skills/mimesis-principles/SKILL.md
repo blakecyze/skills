@@ -67,3 +67,8 @@ specific piece of text, the user runs `/mimesis-human` or `/mimesis-concise`. Fo
 a specific named voice (persuasive, practitioner, warm, blunt, plain),
 `/mimesis-tone`. For an interface, `/mimesis-design`. For machine-facing
 instructions, the separate `/mimesis-compile`.
+
+These skills follow the Agent Skills standard and run in any compatible tool
+(Claude Code, Codex CLI, Cursor, Gemini CLI, Grok Build). A `/mimesis-<name>`
+reference means: invoke that skill by whatever mechanism your harness provides,
+whether a slash command, a skill mention, or reading its SKILL.md directly.

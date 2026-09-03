@@ -1,5 +1,30 @@
 # Changelog
 
+## 0.5.1
+
+- Fixed: SKILL.md frontmatter descriptions containing `: ` are now quoted, so strict YAML parsers (the `npx skills` CLI among them) stop rejecting every skill.
+- Changed: `reference/tells.md` gains a provisional Claude 5 era entry in the model-drift section. Kill list reviewed 2026-09, unchanged.
+- Added: `CONTRIBUTING.md`.
+
+## 0.5.0
+
+Cross-tool. The skills now install into any Agent Skills-compatible tool.
+
+- **`scripts/install.sh`**: symlinks each skill into `~/.agents/skills/` and any
+  per-tool user skill dirs present (`~/.codex/skills`, `~/.cursor/skills`,
+  `~/.gemini/skills`). Symlinks resolve back to the repo, so the reference
+  corpus and the linter stay single-copy. `--project`, `--copy` (which also
+  mirrors `reference/`, `linter` and `codex.md` so relative paths hold),
+  `--uninstall`.
+- **Linter path fallback**: `mimesis-human`, `mimesis-tone` and
+  `mimesis-concise` name the linter's location outside Claude Code
+  (`<skill-dir>/../../linter`) alongside `$CLAUDE_PLUGIN_ROOT`.
+- **Cross-harness convention** in `mimesis-principles`: `/mimesis-<name>`
+  references resolve to whatever invocation mechanism the harness has.
+- README section on running mimesis in Codex, Cursor, Gemini CLI and Grok
+  Build, at full fidelity, since the corpus and linter never depended on the
+  harness.
+
 ## 0.4.0
 
 Safeguards and self-grading.

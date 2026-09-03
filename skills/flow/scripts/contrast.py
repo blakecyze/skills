@@ -8,36 +8,16 @@
 
 import argparse
 import json
-import re
 import sys
 from itertools import combinations
 from pathlib import Path
 
-HEX = re.compile(r"#([0-9a-fA-F]{3,8})\b")
-ARGB = re.compile(r"0x([0-9a-fA-F]{8})\b")
-RGB_FUNC = re.compile(r"rgba?\(\s*(\d+)[,\s]+(\d+)[,\s]+(\d+)")
-
-SOURCE_SUFFIXES = {".dart", ".css", ".scss", ".ts", ".tsx", ".js", ".jsx", ".html", ".vue", ".svelte"}
-SKIP_DIRS = {"node_modules", "build", "dist", ".git", ".dart_tool", "ios", "android", "vendor", "coverage"}
+from flowlib import COLOUR, canonical, site, source_files
 
 
 def parse(value):
     """Return (r, g, b) from hex, 0xAARRGGBB, or rgb()."""
-    value = value.strip()
-
-    match = RGB_FUNC.match(value)
-    if match:
-        return tuple(int(g) for g in match.groups())
-
-    digits = value.lstrip("#")
-    if digits.lower().startswith("0x"):
-        digits = digits[2:]
-    if len(digits) == 8:
-        digits = digits[2:]
-    if len(digits) == 3:
-        digits = "".join(c * 2 for c in digits)
-    if len(digits) != 6:
-        raise ValueError(f"unparseable colour: {value}")
+    digits = canonical(value).lstrip("#")
     return tuple(int(digits[i:i + 2], 16) for i in (0, 2, 4))
 
 
@@ -74,49 +54,45 @@ def load_backgrounds(config_path):
     return [neutral[0], neutral[-1]] if neutral else defaults
 
 
-def source_files(root):
-    root = Path(root)
-    if root.is_file():
-        return [root]
-    return [
-        p for p in root.rglob("*")
-        if p.suffix in SOURCE_SUFFIXES and not SKIP_DIRS & set(p.parts)
-    ]
-
-
 def collect(root):
-    """Map colour -> [file:line] across a tree."""
+    """Map canonical colour -> [file:line] across a tree."""
     found = {}
     for path in source_files(root):
         for number, line in enumerate(path.read_text(errors="ignore").splitlines(), 1):
-            for raw in HEX.findall(line):
-                if len(raw) in (3, 6, 8):
-                    found.setdefault(f"#{raw.upper()}", []).append(f"{path}:{number}")
-            for raw in ARGB.findall(line):
-                found.setdefault(f"#{raw[2:].upper()}", []).append(f"{path}:{number}")
+            for raw in COLOUR.findall(line):
+                try:
+                    found.setdefault(canonical(raw), []).append(f"{site(path, root)}:{number}")
+                except ValueError:
+                    continue
     return found
 
 
-def report_scan(root, config_path):
+def report_scan(root, config_path, top):
     backgrounds = load_backgrounds(config_path)
     found = collect(root)
     if not found:
         print("No colour literals found.")
         return
 
+    rows = []
+    for colour, sites in sorted(found.items(), key=lambda kv: -len(kv[1])):
+        ratios = [ratio(colour, bg) for bg in backgrounds]
+        rows.append((colour, ratios, sites))
+    failing = [r for r in rows if all(x < 3.0 for x in r[1])]
+
     print(f"## Contrast scan: {root}\n")
-    print(f"Backgrounds tested: {', '.join(backgrounds)}\n")
+    print(f"**{len(rows)} distinct colours across {sum(len(s) for _, _, s in rows)} sites. "
+          f"{len(failing)} fail 3:1 against both backgrounds** ({', '.join(backgrounds)}).\n")
+
     print("| Colour | " + " | ".join(f"vs {b}" for b in backgrounds) + " | Uses | First seen |")
     print("|---|" + "---|" * (len(backgrounds) + 2))
-
-    for colour, sites in sorted(found.items(), key=lambda kv: -len(kv[1])):
-        try:
-            ratios = [ratio(colour, bg) for bg in backgrounds]
-        except ValueError:
-            continue
-        note = "**fails on both**" if all(r < 3.0 for r in ratios) else ""
+    shown = failing + [r for r in rows if r not in failing]
+    for colour, ratios, sites in shown[:top]:
+        note = " **fails both**" if all(r < 3.0 for r in ratios) else ""
         cells = " | ".join(f"{r:.2f}" for r in ratios)
-        print(f"| `{colour}` | {cells} | {len(sites)} | `{sites[0]}` {note} |")
+        print(f"| `{colour}` | {cells} | {len(sites)} | `{sites[0]}`{note} |")
+    if len(rows) > top:
+        print(f"\n+{len(rows) - top} more colours. Raise `--top` to see them.")
 
     print("\nRatios are against the extreme backgrounds only. A colour passing here can still")
     print("fail against a mid-ramp surface. Check real pairs with the two-argument form.")
@@ -137,10 +113,11 @@ def main():
     parser.add_argument("--scan", metavar="PATH", help="extract colours from a file or tree")
     parser.add_argument("--config", metavar="PATH", help="flow.config.json for background candidates")
     parser.add_argument("--matrix", action="store_true", help="every pair among the given colours")
+    parser.add_argument("--top", type=int, default=15, help="rows in the scan table, failures first")
     args = parser.parse_args()
 
     if args.scan:
-        report_scan(args.scan, args.config)
+        report_scan(args.scan, args.config, args.top)
         return 0
 
     if args.matrix:

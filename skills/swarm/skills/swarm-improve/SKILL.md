@@ -94,7 +94,7 @@ The `Why` and `Out of scope` sections are what separate a plan a cheap agent can
 
 ### Next step
 Run `/swarm-execute plans/<slug>.md` to dispatch a cheaper agent, one plan per run.
-Without the plugin: `claude -p "Execute the plan in plans/<slug>.md exactly" --model haiku`.
+Without the plugin: `claude -p "Execute the plan in plans/<slug>.md exactly" --model haiku`, or `codex exec` / your harness's equivalent with the same brief.
 <if --issues: "Published N issues: <links>">
 
 ### Cost

@@ -1,6 +1,6 @@
 # Colour
 
-Loaded for FLOW-05, FLOW-06, FLOW-09.
+Loaded for FLOW-05, FLOW-06, FLOW-09. Gestalt: figure and ground (05) and similarity (09).
 
 ## The two-bucket rule
 

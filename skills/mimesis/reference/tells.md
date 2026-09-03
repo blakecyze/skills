@@ -103,6 +103,12 @@ covers the earned-word set in section 1: the table there and the linter's
   provenance signal absent from Anthropic and OpenAI text. It is not visible to a
   reader and degrades under paraphrasing, so it is a provenance fact rather than a
   prose tell.
+- **Claude 5 era (Fable and Mythos tier, 2026).** Too new for the detector
+  literature this file is built on. Until studied, carry the Opus 4.x
+  fingerprint forward as the working assumption: contextually inappropriate
+  hedging, reasoning traces leaking into prose, and the polished
+  marketing-shaped default voice. Reviewed 2026-09; kill list unchanged, no
+  new-era terms confirmed yet.
 
 When you flag a term, knowing its era is useful context, not a reason to spare a
 current one. The linter flags the union of all eras.

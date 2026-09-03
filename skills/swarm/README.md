@@ -1,113 +1,82 @@
 # swarm
 
-> Deliberate agent orchestration. Sequential by default; the swarm has to earn its keep.
+> Run the swarm on purpose. It has to earn its keep.
 
-Seven Claude Code skills for running agent swarms on purpose. Where [kanso](https://github.com/blakecyze/kanso) restrains, swarm spends: it fans work out in parallel or hands execution to a cheaper model, but only when a single sequential pass would cost you more. A hard ceiling keeps it from running away, and nothing judges its own work.
+Fanning a task out to a dozen agents feels powerful. Most of the time it just burns tokens for a result one careful pass would've given you. swarm is seven skills that treat parallelism as a cost, not a reflex. It goes sequential by default and only spreads out when the work is truly independent and the merge is cheap. There's a hard ceiling so it can't run away, and no agent ever grades its own homework.
+
+## Get it
+
+In Claude Code:
 
 ```
 /plugin marketplace add blakecyze/swarm
 /plugin install swarm
 ```
 
-&nbsp;
+Anywhere else (Codex, Cursor, Gemini CLI, Grok Build), the skills follow the open Agent Skills standard, so one script installs them for every tool at once:
+
+```bash
+git clone https://github.com/blakecyze/swarm && swarm/scripts/install.sh
+```
+
+That symlinks each skill into `~/.agents/skills/`, plus each tool's own user dir (`~/.codex/skills`, `~/.cursor/skills`, `~/.gemini/skills`) where one exists; restart the tool afterwards. `--project`, `--copy` and `--uninstall` do what they say. Fair warning on fidelity: swarm is about parallel agents, and not every tool has them. The skills carry a capability ladder for that: native subagents where they exist (Claude Code, Grok Build), headless CLI fan-out where an agent CLI is on PATH, and honest one-at-a-time execution everywhere else. The plan and brief formats were built to survive the bottom rung.
 
 ## The skills
 
-| Skill | What it does | Invocation |
+| Skill | What it does | How you call it |
 |---|---|---|
-| `swarm-principles` | Standing rules for every swarm: when to fan out, the cost ceiling, who judges. Loaded automatically. | auto |
-| `swarm-plan` | Decomposes one task into parallel waves with dependencies and a named merge. Plans, never spawns. | `/swarm-plan [task]` |
-| `swarm-explore` | Read-only parallel investigation. Maps a codebase or question space fast. Never writes. | `/swarm-explore [what]` |
-| `swarm-bulldoze` | Best-of-N. Independent candidates for the same task, one winner picked against a pre-fixed rubric. | `/swarm-bulldoze [task] [N]` |
-| `swarm-refine` | One artefact, parallel critics on disjoint axes, merged into one coherent revision. | `/swarm-refine [artefact]` |
-| `swarm-improve` | Capable-model audit that writes self-contained plans a cheaper model can execute cold. | `/swarm-improve [mode]` |
-| `swarm-execute` | Dispatches those plans to a cheaper model, one subagent per plan, and verifies acceptance. | `/swarm-execute [plan]` |
-
-&nbsp;
+| `swarm-principles` | The rules every swarm follows: when to fan out, the cost ceiling, who judges. | auto |
+| `swarm-plan` | Breaks one task into parallel waves with a named merge. Plans, never spawns. | `/swarm-plan [task]` |
+| `swarm-explore` | Read-only parallel recon. Maps a codebase or a question fast, writes nothing. | `/swarm-explore [what]` |
+| `swarm-bulldoze` | Best-of-N. Several takes at the same task, one winner picked against a fixed rubric. | `/swarm-bulldoze [task] [N]` |
+| `swarm-refine` | One piece, critics on separate angles, merged into a single clean revision. | `/swarm-refine [artefact]` |
+| `swarm-improve` | A capable model writes plans a cheaper model can run cold. | `/swarm-improve [mode]` |
+| `swarm-execute` | Hands those plans to the cheaper model and checks the work. | `/swarm-execute [plan]` |
 
 ## What it looks like
 
-**`/swarm-plan` output:**
+`/swarm-plan` on a chunky migration:
 
 ```markdown
-## Swarm plan: migrate the REST handlers to the v2 error envelope
+## Swarm plan: migrate REST handlers to the v2 error envelope
 
 **Verdict:** worth swarming (14 handler files, no shared state, cheap merge)
 
 ### Wave 1 (parallel, 4 slices)
-- **inventory**: list every handler and its current error shape
-- **auth handlers**: migrate `api/auth/*` (3 files)
-- **billing handlers**: migrate `api/billing/*` (5 files)
-- **catalogue handlers**: migrate `api/catalogue/*` (6 files)
+- inventory: list every handler and its current error shape
+- auth handlers: migrate `api/auth/*` (3 files)
+- billing handlers: migrate `api/billing/*` (5 files)
+- catalogue handlers: migrate `api/catalogue/*` (6 files)
 
-### Wave 2 (depends on wave 1)
-- **contract tests**: needs all migrated handlers
-
-### Merge
-Additive; one review pass over the combined diff. No selection involved.
+### Wave 2 (needs wave 1)
+- contract tests across all migrated handlers
 
 ### Cost
-Roughly 4x a single pass, peak 4 concurrent agents.
+Roughly 4x a single pass, 4 agents at peak.
 ```
 
-&nbsp;
-
-**The improve → execute pair:**
-
-```
-/swarm-improve branch        # capable model audits, writes plans/<slug>.md
-/swarm-execute plans/        # cheap model executes them cold, verifies acceptance
-```
-
-Every plan has to run cold, with zero prior context. If the executor gets stuck, that's a defect in the plan, not the executor. Fix the format and send it back; don't patch it with knowledge only the session had.
-
-&nbsp;
-
-## Install
-
-Plugin (recommended):
-
-```
-/plugin marketplace add blakecyze/swarm
-/plugin install swarm
-```
-
-Manual, personal scope:
-
-```bash
-git clone https://github.com/blakecyze/swarm ~/swarm
-mkdir -p ~/.claude/skills
-cp -r ~/swarm/skills/* ~/.claude/skills/
-```
-
-Manual, project scope:
-
-```bash
-mkdir -p .claude/skills
-cp -r path/to/swarm/skills/* .claude/skills/
-```
-
-Skills load on next session, or immediately via the file watcher.
-
-&nbsp;
+It tells you the cost up front, and it'll happily tell you a task isn't worth swarming at all.
 
 ## How it behaves
 
-- **Sequential is the default.** Fan-out trades tokens for wall-clock time and breadth; it only wins when the work is independent, the briefs are self-contained, and the merge is cheap. Otherwise the skills tell you to just do it straight.
-- **Hard cost ceiling.** 5 concurrent subagents by default, 6–10 with your confirmation, above 10 refused. The cap is on concurrent agents, not total work.
-- **Judging is procedural.** Rubric fixed before any candidate is read; each candidate scored alone before any side-by-side comparison. Generating agents never vote on their own work.
-- **Read-parallel, write-sequential.** Critics and explorers fan out; edits land in one pass. Executors only run in parallel when their plans touch disjoint files.
-- **Plans are written for strangers.** `/swarm-improve` spends the capable model on judgement and captures it in plans a context-free cheap model can run; `/swarm-execute` proves it by dispatching them cold.
-- **Everything that spawns is manual-only.** Only `swarm-principles` auto-loads; the six verbs never auto-invoke.
+- **Sequential wins by default.** Fan-out only pays when the work is independent, the briefs are self-contained, and the merge is cheap. Otherwise the skills tell you to just do it straight.
+- **Hard cost ceiling.** 5 agents at once by default, 6 to 10 if you confirm, above 10 refused. The cap is on concurrent agents, not total work.
+- **Judging is procedural.** The rubric is fixed before any candidate is read, and every candidate is scored alone before any comparison. Agents never vote on their own work.
+- **Read wide, write narrow.** Critics and explorers fan out. Edits land in one pass.
+- **Plans are written for strangers.** `/swarm-improve` spends the smart model on judgement and bottles it into plans a context-free cheap model can run. If the executor gets stuck, that's a bug in the plan, not the executor.
+- **Nothing spawns on its own.** Only `swarm-principles` auto-loads. The six verbs are all manual.
 
-&nbsp;
+## The family
 
-## Contributing
+Same "earn your keep" idea, aimed at different work:
 
-Modes are arguments, not new skills. If you can't describe a skill's trigger in one sentence, it's a note, not a skill. See [CONTRIBUTING.md](CONTRIBUTING.md).
+- [kanso](https://github.com/blakecyze/kanso) does it for code. It cuts the slop out of what Claude writes.
+- [mimesis](https://github.com/blakecyze/mimesis) does it for writing and design. It strips the tells that read as AI.
 
-&nbsp;
+## Chip in
 
-## License
+Modes are arguments, not new skills. If you can't say a skill's trigger in one sentence, it's a note, not a skill. See [CONTRIBUTING.md](CONTRIBUTING.md).
+
+## Licence
 
 MIT.

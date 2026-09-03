@@ -50,6 +50,8 @@ once rather than guessing.
    python3 "$CLAUDE_PLUGIN_ROOT/linter" --json <target>
    ```
 
+   (Outside Claude Code, the linter is at `<this-skill-dir>/../../linter`.)
+
    Fix and re-run until clean of all non-advisory findings. An advisory finding
    (`earned-word`, `low-burstiness`, `low-lexical-diversity`) may stand only
    when you judge it earned, and you say so. The tone's own kill-list in

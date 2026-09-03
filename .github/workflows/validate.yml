@@ -1,0 +1,83 @@
+name: validate
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install PyYAML
+        run: pip install pyyaml
+
+      - name: Strict-parse SKILL.md frontmatter
+        run: |
+          python3 - <<'EOF'
+          import glob, sys, yaml
+          failed = 0
+          files = glob.glob("skills/*/skills/*/SKILL.md")
+          assert files, "no SKILL.md files found"
+          for f in sorted(files):
+              text = open(f).read()
+              if not text.startswith("---"):
+                  print(f"{f}: missing frontmatter"); failed = 1; continue
+              try:
+                  fm = yaml.safe_load(text.split("---")[1])
+              except yaml.YAMLError as e:
+                  print(f"{f}: YAML parse error: {e}"); failed = 1; continue
+              for key in ("name", "description"):
+                  if not fm.get(key):
+                      print(f"{f}: missing '{key}'"); failed = 1
+          print(f"checked {len(files)} skills")
+          sys.exit(failed)
+          EOF
+
+      - name: Validate JSON manifests
+        run: |
+          python3 - <<'EOF'
+          import glob, json, sys
+          failed = 0
+          files = glob.glob(".claude-plugin/*.json") + glob.glob("skills/*/.claude-plugin/*.json") + glob.glob("skills/*/tokens/*.json")
+          for f in sorted(files):
+              try:
+                  json.load(open(f))
+              except json.JSONDecodeError as e:
+                  print(f"{f}: {e}"); failed = 1
+          print(f"checked {len(files)} manifests")
+          sys.exit(failed)
+          EOF
+
+      - name: Lint README prose with the mimesis linter
+        run: |
+          python3 - <<'EOF'
+          import json, subprocess, sys
+          failed = 0
+          for f in ("README.md", "skills/flow/README.md"):
+              out = subprocess.run(
+                  ["python3", "skills/mimesis/linter", "--json", f],
+                  capture_output=True, text=True).stdout
+              for doc in json.loads(out):
+                  for finding in doc["findings"]:
+                      if finding["severity"] in ("blocker", "important"):
+                          print(f"{f}:{finding['line']} [{finding['severity']}] {finding['message']}")
+                          failed = 1
+          print("prose lint done (polish findings are advisory)")
+          sys.exit(failed)
+          EOF
+
+      - name: Check README links resolve
+        run: |
+          grep -o '](skills/[^)#]*' README.md | sed 's/](//' | sort -u | while read -r p; do
+            [ -e "$p" ] || { echo "MISSING: $p"; exit 1; }
+          done
+          echo "all README links resolve"
+
+      - name: Flow self-check
+        run: |
+          python3 skills/flow/scripts/scan_tokens.py skills/flow/scripts > /dev/null
+          python3 -c "import json; json.load(open('skills/flow/tokens/flow.defaults.json'))"
+          echo "flow scripts run"

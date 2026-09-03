@@ -1,7 +1,7 @@
 {
   "name": "mimesis",
-  "version": "0.4.0",
-  "description": "Two opposite jobs. Strip AI tells from writing and design for human readers, and compile dense, token-efficient instructions for machine readers. Guidelines outrank the model.",
+  "version": "0.5.1",
+  "description": "Claude Code skills that make writing sound human again, and compile tight prompts for machines. The guidelines beat the model.",
   "author": {
     "name": "Blake Cyze",
     "url": "https://cyze.dev"

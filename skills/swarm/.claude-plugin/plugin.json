@@ -1,7 +1,7 @@
 {
   "name": "swarm",
-  "version": "0.1.0",
-  "description": "Agent-orchestration skills for Claude Code. Fan work out in parallel, pick winners, and delegate execution to cheaper models — with a hard cost ceiling.",
+  "version": "0.2.1",
+  "description": "Claude Code skills for running agent swarms on purpose. Sequential first, fan out only when it pays, hard cost ceiling.",
   "author": {
     "name": "Blake Cyze",
     "url": "https://cyze.dev"

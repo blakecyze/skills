@@ -2,6 +2,24 @@
 
 All notable changes to swarm are recorded here. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning follows [SemVer](https://semver.org/).
 
+## [0.2.1] — 2026-09-03
+
+### Fixed
+
+- `swarm-execute`'s frontmatter description is now quoted, so strict YAML parsers (the `npx skills` CLI among them) stop rejecting it.
+
+## [0.2.0] — 2026-07-08
+
+### Added
+
+- The capability ladder in `swarm-principles`: native parallel subagents, then headless CLI fan-out (`claude -p`, `codex exec`, or equivalent), then sequential in-context emulation. Every skill dispatches per the ladder, and `model: haiku` reads as "your harness's cheapest capable model".
+- `scripts/install.sh` — cross-tool installer. Symlinks each skill into `~/.agents/skills/` and any per-tool user skill dirs present (`~/.codex/skills`, `~/.cursor/skills`, `~/.gemini/skills`). `--project`, `--copy`, `--uninstall`.
+- README section on cross-tool use, honest about which ladder rung each tool reaches.
+
+### Changed
+
+- `swarm-execute` and `swarm-improve` headless fallbacks generalised beyond `claude -p` to whichever agent CLI is on PATH.
+
 ## [0.1.0] — 2026-07-08
 
 ### Added

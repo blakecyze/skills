@@ -9,19 +9,13 @@ allowed-tools: Bash(rg *) Bash(find *) Bash(python3 *)
 
 Discovers the design scale a codebase is actually using, reconciles it against the Flow defaults, and writes `flow.config.json` at the project root. Every other Flow skill resolves its values through that file.
 
-Run this before auditing an unfamiliar codebase. Without it, Flow imposes its own defaults on a project that may already be internally coherent, and every finding becomes noise.
-
-## Why this exists
-
-A project's real scale is whatever its code does, not whatever its theme file claims. A theme declaring an 8pt grid while 200 call sites hardcode `13` has a 13 in its scale, and pretending otherwise produces 200 false findings.
-
-The job is to find the truth first, then decide what to change.
+Run this before auditing an unfamiliar codebase. A project's real scale is whatever its code does, not whatever its theme file claims. A theme declaring an 8pt grid while 200 call sites hardcode `13` has a 13 in its scale, and pretending otherwise produces 200 false findings.
 
 ## Process
 
 ### 1. Find declared tokens
 
-Look for, in order of authority:
+In order of authority:
 
 - `flow.config.json` (already run; offer to refresh instead of overwrite)
 - Design token files: `tokens.json`, `*.tokens.json`, Style Dictionary output
@@ -33,18 +27,16 @@ Look for, in order of authority:
 ### 2. Find used values
 
 `python3 scripts/scan_tokens.py <path> --report frequency`
-Paths are relative to the Flow root: `${CLAUDE_PLUGIN_ROOT}` in Claude Code, otherwise the project's `flow/` directory.
 
-
-This counts every literal spacing, size, radius, and colour value in the source. The output is a frequency table.
+Counts every literal spacing, size, radius, and colour value in the source. Scan the source directory, not the repo root, so generated files and vendored code stay out.
 
 ### 3. Reconcile
 
-Compare declared against used. Four outcomes, and each needs a different response:
+Compare declared against used. Four outcomes:
 
 - **Declared and used often** → real token. Keep.
 - **Declared and never used** → dead token. Propose deletion.
-- **Undeclared and used often** → de facto token. This is the important one. Either promote it into the scale or plan a migration, and say which. Do not silently treat it as a violation.
+- **Undeclared and used often** → de facto token. Promote it into the scale or plan a migration, and say which. Do not silently treat it as a violation.
 - **Undeclared and used once or twice** → drift. Snap to the nearest real token.
 
 ### 4. Judge the ramp
@@ -83,7 +75,7 @@ Write `flow.config.json` at the project root, merged over `tokens/flow.defaults.
 }
 ```
 
-The `notes` field matters. It is where you record deliberate exceptions so the next audit does not re-flag them.
+The `notes` field records deliberate exceptions so the next audit does not re-flag them.
 
 ## Output format
 
@@ -118,16 +110,10 @@ The `notes` field matters. It is where you record deliberate exceptions so the n
 - Is `13px` intentional, or drift from a `12px` ramp? It appears 47 times, so it is now load-bearing either way.
 ```
 
-## What this skill never does
+## Guardrails
 
-- Edit source files. It writes exactly one file, `flow.config.json`, and only that.
-- Auto-migrate values across a codebase. That is a `flow-apply` job, after the config exists and the user has approved the target.
-- Overwrite an existing `flow.config.json` without showing the diff first.
-- Invent a scale for a project that has one. Discovery precedes opinion.
-
-## Failure modes to avoid
-
-- Treating the theme file as truth without counting real usage.
-- Reporting every literal as drift. High-frequency undeclared values are the system, whether anyone declared them or not.
-- Recommending a full migration when the cost is hundreds of call sites and the benefit is tidiness.
-- Scanning generated files, build output, or vendored dependencies. Exclude them.
+- Writes exactly one file, `flow.config.json`. Never edits source.
+- Never overwrites an existing `flow.config.json` without showing the diff first.
+- Never auto-migrates values across a codebase. That is a `flow-apply` job, after the config exists and the user has approved the target.
+- Discovery precedes opinion. Do not invent a scale for a project that has one.
+- Do not recommend a full migration when the cost is hundreds of call sites and the benefit is tidiness.

@@ -2,7 +2,7 @@
   "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "flow",
   "displayName": "Flow",
-  "version": "1.0.0",
+  "version": "1.2.0",
   "description": "Design principles for AI agents. Intent gate, twelve-item violation taxonomy, and computed accessibility checks for Flutter and web interfaces.",
   "author": {
     "name": "Blake Cyze",

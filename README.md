@@ -85,6 +85,7 @@ Design. Diagnostic, not generative: it passes an intent gate before touching sty
 | [flow-audit](skills/flow/skills/flow-audit/SKILL.md) | Read-only design review with a tiered findings report |
 | [flow-apply](skills/flow/skills/flow-apply/SKILL.md) | Repairs violations, appearance only |
 | [flow-tokens](skills/flow/skills/flow-tokens/SKILL.md) | Discovers a project's real scale, writes `flow.config.json` |
+| [flow-motion](skills/flow/skills/flow-motion/SKILL.md) | Builds and audits animation via a gate and the FLOW-M taxonomy |
 
 ## Layout
 

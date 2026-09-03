@@ -34,6 +34,10 @@ Run the linter like this, against a file or stdin:
 python3 "$CLAUDE_PLUGIN_ROOT/linter" --json path/to/draft.md
 ```
 
+`$CLAUDE_PLUGIN_ROOT` exists when running as a Claude Code plugin. In any other
+Agent Skills harness, the linter sits two levels up from this SKILL.md:
+`<this-skill-dir>/../../linter`.
+
 Use `--json` when you need to act on findings, or omit it for a readable report.
 The linter reports; it never rewrites. Restructuring is your job under L1.
 

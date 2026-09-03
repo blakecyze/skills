@@ -25,6 +25,8 @@ This command rests on the same three-layer stack as `mimesis-human`.
   python3 "$CLAUDE_PLUGIN_ROOT/linter" --json path/to/draft.md
   ```
 
+  (Outside Claude Code, the linter is at `<this-skill-dir>/../../linter`.)
+
   Tightening is not an excuse to leave an em dash or a kill-list word behind. A
   concise pass still ends on a clean linter result.
 - **L3.** Optional generator, same gate as `mimesis-human`. See

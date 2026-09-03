@@ -54,6 +54,18 @@ Whoever judges follows the same procedure, because judge sloppiness is a procedu
 
 Never let the generating agents vote on their own work. Either the orchestrator judges from outside, or a fresh evaluator does.
 
+## The capability ladder
+
+These skills follow the Agent Skills standard and run in any compatible tool, but harnesses differ in what they can dispatch. Every `/swarm-*` skill resolves "fan out" against this ladder, top rung first:
+
+1. **Native parallel subagents** (Claude Code's Agent tool, Grok Build's agent pool). Full behaviour as written.
+2. **Headless CLI fan-out.** No subagent primitive, but an agent CLI is on PATH: dispatch each brief as a background process (`claude -p "<brief>"`, `codex exec "<brief>"`, or your harness's equivalent). Same briefs, same caps, same merge.
+3. **Sequential emulation.** Neither of the above: run each brief one at a time in the current context, in dependency order. Slower, but the plan and brief formats are built to survive this; the discipline is the value, not the parallelism.
+
+Say which rung you are on when it is not rung 1. Where a skill names a model tier (`model: haiku`), read it as "your harness's cheapest capable model"; if per-agent model selection does not exist, say so and continue at the session model.
+
+A `/swarm-<name>` reference means: invoke that skill by whatever mechanism your harness provides, whether a slash command, a skill mention, or reading its SKILL.md directly.
+
 ## Briefing subagents
 
 A subagent is a stranger. It has none of your context. A good brief states: the exact task, the inputs (inline or by path, never "the file we discussed"), the output format expected, and the boundary (read-only? which paths? what not to touch). Vague briefs produce divergent junk that the merge step cannot reconcile.

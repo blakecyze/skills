@@ -20,7 +20,7 @@ The principles from `swarm-principles` apply. This is the execution half of tier
 
 Dispatch each plan on a cheap model: pass `model: haiku` (or the cheapest available alias) when spawning the subagent. `--model <alias>` overrides. If the harness cannot set a per-subagent model, say so and dispatch at the session model; the plans still pay off, they are just not cheaper.
 
-Without this plugin, the same dispatch works headless: `claude -p "Execute the plan in plans/<slug>.md exactly. Touch nothing outside its Files and Out of scope sections." --model haiku`.
+Without a subagent primitive, the same dispatch works headless through whichever agent CLI is on PATH: `claude -p "Execute the plan in plans/<slug>.md exactly. Touch nothing outside its Files and Out of scope sections." --model haiku`, or `codex exec` / your harness's equivalent with the same brief. No CLI at all: rung 3 of the capability ladder in `swarm-principles`, one plan at a time in-context.
 
 ## Process
 

@@ -9,7 +9,7 @@ allowed-tools: Bash(rg *) Bash(find *) Bash(python3 *)
 
 Read-only interface review. Produces a structured findings report. Makes no edits.
 
-The taxonomy and the intent gate from `flow-principles` govern this skill. Read that first if it is not already loaded.
+The taxonomy, tiers, and intent gate from `flow-principles` govern this skill. Load it first if it is not already loaded.
 
 ## Resolve the scope
 
@@ -27,25 +27,23 @@ If `$ARGUMENTS` is empty, ask what to review. Do not default to scanning the who
 In order:
 
 1. **Resolve tokens.** Look for a theme file, a design token file, Tailwind config, `ThemeData`, CSS custom properties, or `flow.config.json`. If found, that scale is the standard. If not, load `tokens/flow.defaults.json` and say in the report that defaults were assumed.
-2. **Run the scanners.** `python3 scripts/scan_tokens.py <path>` for off-scale and hardcoded values. `python3 scripts/contrast.py --scan <path>` for colour pairs it can resolve.
-Paths are relative to the Flow root: `${CLAUDE_PLUGIN_ROOT}` in Claude Code, otherwise the project's `flow/` directory.
-
-3. **Read the surrounding surfaces.** Two or three sibling screens. A pattern that repeats across the product is a convention, not a violation. Flagging a house style as an error is the fastest way to make this skill untrusted.
+2. **Run the scanners on the target file and its style imports only.** `python3 scripts/scan_tokens.py <file>` and `python3 scripts/contrast.py --scan <file>`. Tree-wide scanning is `flow-tokens`' job. Read the summary line first; stop there if it is clean.
+3. **Check the house style.** Grep two or three sibling screens for the specific pattern you are about to flag. Do not read them whole. A pattern that repeats across the product is a convention, not a violation.
 
 ## Pass the intent gate
 
-State purpose, primary action, reading order, and density class before any finding. This appears at the top of the report. If the source cannot support it, stop and ask.
+State purpose, primary action, reading order, and density class before any finding. If the source cannot support it, stop and ask.
 
 ## Produce findings
 
 Walk the taxonomy in order, FLOW-01 through FLOW-12. For each violation found:
 
 - Locate it precisely. `file:line`, or a described region for images.
-- Assign a tier using the `flow-principles` severity rules.
+- Assign a tier.
 - Give evidence. The measured gap, the computed ratio, the actual value. Not "feels cramped".
 - Give one specific fix. A value, not a direction.
 
-One entry per violation per location. If the same violation appears eleven times in one file, that is one finding with a count and two example locations.
+One entry per violation per location. If the same violation appears eleven times in one file, that is one finding with a count and two example locations. Above roughly a dozen findings the report stops being read; group and prioritise.
 
 Do not pad. A screen with two Tier 1 findings and nothing else produces a report with two findings.
 
@@ -91,25 +89,12 @@ Emit a single markdown document. No preamble, no closing offer of further help.
 <One or two sentences. Not flattery. Name what a future editor should not break.>
 ```
 
-## Framing
+## Guardrails
 
 - Critique the interface, not the designer. "This screen", never "you".
 - Every finding carries a fix. A finding without one is a complaint.
-- Never flag something merely because it is not to your taste. If it is coherent and intentional, it belongs in "what is working".
-- Do not flag what a linter or formatter already handles.
-- If a finding depends on information you do not have, such as what the empty state contains, ask rather than assume.
-
-## What this skill never does
-
-- Edit files. The audit is read-only, including the token files.
-- Redesign. Suggesting a different layout entirely is out of scope; that is a separate conversation.
-- Run the app, take screenshots, or install dependencies.
-- Estimate contrast, character counts, or scale membership. Run the script.
-
-## Failure modes to avoid
-
-- Reciting gestalt principles as prose instead of citing a violated ID with a location.
-- Auditing a component in isolation and flagging the product's house style as an inconsistency.
-- Producing forty findings on one screen. Above roughly a dozen the report stops being read; group and prioritise.
-- Assuming light mode. Check both themes if the project defines both.
-- Treating a screenshot audit as equivalent to a source audit. Say what was not checkable.
+- Do not flag what a linter or formatter already handles, or a coherent house style.
+- If a finding depends on information you do not have, ask rather than assume.
+- Check both themes if the project defines both.
+- A screenshot audit is not a source audit. Say what was not checkable.
+- Never edit files, redesign the layout, run the app, or estimate a number a script can compute.
