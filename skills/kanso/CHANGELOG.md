@@ -2,6 +2,12 @@
 
 All notable changes to kanso are recorded here. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning follows [SemVer](https://semver.org/).
 
+## [0.6.0] — 2026-09-03
+
+### Added
+
+- `kanso-handoff`: packages the current session's context into `.claude/handoff.md` (goal, state, decisions with reasons, files, open threads, dead ends, verify commands) and prints the resume line, so `/clear` or a new session loses nothing. One file, overwritten each run, 150-line ceiling, never a secret. Ephemeral by design: durable repo guidance stays with `kanso-context`, permanent notes with memory tools.
+
 ## [0.5.0] — 2026-09-03
 
 ### Added

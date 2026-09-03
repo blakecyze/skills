@@ -37,6 +37,7 @@ One honest caveat: the edit-verify hook (the thing that lint-checks each edit as
 | `kanso-commit` | Atomic commits with messages that say *why*. | `/kanso-commit` |
 | `kanso-pr` | PR descriptions that stand on their own, drawn from your commits. | `/kanso-pr` |
 | `kanso-context` | Keeps `AGENTS.md` / `CLAUDE.md` lean. | `/kanso-context [mode]` |
+| `kanso-handoff` | Packs the session into one file so `/clear` costs nothing. | `/kanso-handoff [focus]` |
 
 ## What it looks like
 

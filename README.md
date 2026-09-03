@@ -46,6 +46,7 @@ Code. Keeps AI-written output short and honest: delete before you add, earn ever
 | [kanso-commit](skills/kanso/skills/kanso-commit/SKILL.md) | Stage work and split it into logical commits |
 | [kanso-pr](skills/kanso/skills/kanso-pr/SKILL.md) | Pull request descriptions and branch summaries |
 | [kanso-context](skills/kanso/skills/kanso-context/SKILL.md) | Create and prune AGENTS.md / CLAUDE.md files |
+| [kanso-handoff](skills/kanso/skills/kanso-handoff/SKILL.md) | Packs the session into one file so `/clear` costs nothing |
 | [kanso-prompting](skills/kanso/skills/kanso-prompting/SKILL.md) | Rules for writing better prompts for frontier models |
 
 ### [mimesis](skills/mimesis)
