@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
+  "name": "yum",
+  "displayName": "Yum",
+  "version": "1.0.0",
+  "description": "Find, compare, and adapt relevant design references in one scoped pass.",
+  "author": {
+    "name": "Blake Cyze",
+    "url": "https://cyze.dev"
+  },
+  "homepage": "https://github.com/blakecyze/skills",
+  "repository": "https://github.com/blakecyze/skills",
+  "license": "MIT",
+  "keywords": [
+    "design",
+    "research",
+    "inspiration",
+    "ux",
+    "references"
+  ]
+}

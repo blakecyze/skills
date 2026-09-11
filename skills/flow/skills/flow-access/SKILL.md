@@ -1,27 +1,28 @@
 ---
 name: flow-access
-description: "Use when the user wants accessibility checked or repaired: focus states, keyboard paths, ARIA, form labels, target sizes, screen reader output, zoom behaviour. Also \"a11y pass\", \"is this accessible\", \"WCAG check\". One domain: the full accessibility surface, most of it Tier 1 by nature."
-argument-hint: "[scope: diff|module-path|all]"
+description: Perform a focused accessibility review or repair of an interface, including keyboard paths, semantics, focus, announcements, and enlarged content. Use for explicit accessibility work or a substantial access defect; routine UI refinement belongs to flow.
 ---
 
-# flow-access
+# Flow access
 
-The polish pass for access. Runs under the contract in `references/polish.md`; the state rules and the little things live in `references/interaction.md`. Load both now. Most findings here are Tier 1 by nature: an interface a user cannot operate has failed them outright.
+Trace whether users can understand and complete the task through the supported input and output paths. Infer review versus repair from the request; a review does not edit.
 
-## The checks
+## Inspect the task path
 
-1. **Fake elements.** `<div onClick>` doing a button's job, styled spans navigating. Native first; no ARIA beats bad ARIA.
-2. **Focus.** Missing or removed `:focus-visible`, rings under 2px, rings that vanish against an adjacent colour or in forced-colors mode. Overlaps FLOW-11; cite both.
-3. **Keyboard gaps.** Pointer interactions with no keyboard path, positive `tabindex`, composite widgets without roving focus.
-4. **Small targets.** Under 24px square is Tier 1; under the 44px/40px preference is Tier 3. Fix via `flow-surface`'s padding rule.
-5. **Unlabelled forms.** Placeholder-as-label, missing `<label for>`, missing `autocomplete`/`inputmode`, blocked paste, submit disabled before the request starts, errors not wired through `aria-invalid` and `aria-describedby`.
-6. **Silent updates.** Toasts and validation with no live region, `role="alert"` on things that are not urgent, regions created at update time.
-7. **Colour-only status.** Any state carried by hue alone; the second cue is this skill's finding even though the hue is `flow-colour`'s.
-8. **Structure.** Heading order, one `<main>`, skip link, 200% zoom and 320px width without horizontal scroll.
-9. **Motion and media.** Missing reduced-motion branches (cite FLOW-M7), autoplay without pause, alt text describing the picture instead of the purpose.
+Read the relevant component and shared primitives before diagnosing a missing feature. Identify the actions, state changes, and recovery route. Choose checks from actual risks, rather than requiring every assistive technology for every component.
 
-## Boundaries
+- Follow keyboard entry, order, activation, escape, and focus return. Inspect focus visibility and any trapping or unexpected movement.
+- Inspect native semantics, accessible names, labels, roles, and state exposure. Prefer correcting the native element to layering redundant ARIA over it.
+- Check whether status and errors are perceivable without relying on colour, animation, or sound alone. Announcements should describe useful changes without repeating every render.
+- Inspect zoom or enlarged text, narrow layouts, long content, and touch access. Hidden or clipped actions still need a usable route.
+- For contrast, establish the actual rendered colours, compositing, element purpose, and applicable threshold. Use available measurement tools; do not infer compliance from a screenshot or literal colour scan.
 
-- Contrast numbers come from `flow-colour`'s measured pass; this skill owns the requirement, not the measurement.
-- Fixes here may touch attributes and element choice, which is behaviour-adjacent: flag anything beyond styling explicitly in the gate so the user approves it knowingly.
-- Idempotent: a clean second run reports "access clean" in one line and stops.
+When assessing a named accessibility standard, consult its current authoritative requirements and distinguish normative criteria from design recommendations. Do not report blanket compliance from a partial pass.
+
+## Repair and verify
+
+Fix the shared source when it owns the defect. Preserve product rules and destinations while restoring semantics, focus, labels, or usable presentation. Do not create a parallel custom interaction when an existing accessible primitive fits.
+
+Re-run the failed path after the repair. Use accessibility-tree or screen-reader inspection when the finding concerns exposed meaning or announcements; source code alone does not prove the spoken result. Record untested environments as coverage gaps, not demonstrated failures.
+
+Report actionable findings or repairs with location, evidence, impact, and verification. No fixed finding quota or extra approval round for already-authorised fixes.

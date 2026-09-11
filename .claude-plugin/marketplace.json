@@ -30,9 +30,23 @@
     {
       "name": "flow",
       "source": "./skills/flow",
-      "description": "Design principles for AI agents. Passes an intent gate before touching styling, cites findings from a twelve-item taxonomy, and computes contrast and scale adherence rather than estimating them.",
+      "description": "Refine interface layout, type, colour, controls, accessibility, copy, and motion in one scoped pass.",
       "category": "design",
       "tags": ["design", "ui", "accessibility", "design-system", "flutter", "react"]
+    },
+    {
+      "name": "delight",
+      "source": "./skills/delight",
+      "description": "Refine product feedback, celebrations, characters, and progress in one scoped pass.",
+      "category": "design",
+      "tags": ["design", "feedback", "motion", "characters", "habits"]
+    },
+    {
+      "name": "yum",
+      "source": "./skills/yum",
+      "description": "Find, compare, and adapt relevant design references in one scoped pass.",
+      "category": "design",
+      "tags": ["design", "research", "inspiration", "ux", "references"]
     }
   ]
 }

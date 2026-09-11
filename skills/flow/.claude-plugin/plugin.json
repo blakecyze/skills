@@ -2,8 +2,8 @@
   "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "flow",
   "displayName": "Flow",
-  "version": "2.0.0",
-  "description": "Design principles for AI agents. Intent gate, twelve-item violation taxonomy, and computed accessibility checks for Flutter and web interfaces.",
+  "version": "3.0.0",
+  "description": "Refine interface layout, type, colour, controls, accessibility, copy, and motion in one scoped pass.",
   "author": {
     "name": "Blake Cyze",
     "url": "https://cyze.dev"
@@ -11,5 +11,14 @@
   "homepage": "https://github.com/blakecyze/skills",
   "repository": "https://github.com/blakecyze/skills",
   "license": "MIT",
-  "keywords": ["design", "ui", "accessibility", "design-system", "flutter", "react", "wcag", "design-tokens"]
+  "keywords": [
+    "design",
+    "ui",
+    "accessibility",
+    "design-system",
+    "flutter",
+    "react",
+    "wcag",
+    "design-tokens"
+  ]
 }

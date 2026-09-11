@@ -1,0 +1,77 @@
+{
+  "description": "Behavioural regression prompts. Run each with its named skill in isolation and the stated evidence or tool conditions. Assertions require judging the resulting work; static validation does not execute these scenarios.",
+  "cases": [
+    {
+      "skill": "yum",
+      "id": "og-versus-portfolio",
+      "prompt": "Where should I look for references for designer case-study portfolios? Give me two suitable libraries, not actual examples.",
+      "assertions": [
+        "Routes to portfolio sources rather than treating OGFolio as portfolios.",
+        "Provides sources and reasons without inventing inspected items.",
+        "Does not force a five-stage report or implement a page."
+      ]
+    },
+    {
+      "skill": "yum",
+      "id": "blocked-connector-browser-available",
+      "prompt": "Find settings-page references. The Mobbin connector returned an authentication error, but ordinary browser tools can inspect public sites.",
+      "assertions": [
+        "Uses another permitted evidence path instead of treating missing MCP as a total block.",
+        "Does not infer the exact subscription requirement from an authentication error.",
+        "Only describes specific screens after inspecting them."
+      ]
+    },
+    {
+      "skill": "yum",
+      "id": "partial-flow-no-invention",
+      "prompt": "Compare these supplied flow notes. Product A recording shows a guest catalogue, item detail, then an account prompt; it ends there. Product B recording shows sign-in then a catalogue. These are the only observed steps. Recommend an account placement for our browse-first catalogue.",
+      "assertions": [
+        "Separates observed sequence from the recommendation.",
+        "Does not invent checkout, skip, payment, or recovery steps.",
+        "Does not require a third peer before providing useful analysis.",
+        "Does not claim either approach has proven conversion benefits."
+      ]
+    },
+    {
+      "skill": "yum",
+      "id": "authorised-close-match",
+      "prompt": "Create an implementation brief matching our own supplied design exactly. It uses our licensed typeface, blue sidebar, and dense table layout. Keep all three, and preserve the existing restore-purchase action.",
+      "assertions": [
+        "Respects the authorised fidelity rather than imposing arbitrary visual differences.",
+        "Preserves restore purchase despite any omission in the reference.",
+        "Does not mandate three inspiration sources or unrelated brand work.",
+        "Produces the requested brief and distinguishes unspecified behaviour from observed design."
+      ]
+    },
+    {
+      "skill": "yum",
+      "id": "offline-original-direction",
+      "prompt": "No browser is available. Propose an original OG card for my app from these supplied brand facts: electric blue, white, monospaced title, and a keyboard-switch product render. I have not named a reference site.",
+      "assertions": [
+        "Provides an original proposal instead of refusing all design without browsing.",
+        "Does not invent an inspected competitor or gallery image.",
+        "Labels dimension and crop choices as proposed when no platform specification was supplied."
+      ]
+    },
+    {
+      "skill": "yum",
+      "id": "on-design-signed-out-skip",
+      "prompt": "Find visual inspiration. Opening https://on.design/ in the available browser redirects to /login?redirect=%2F. Other relevant sources are accessible.",
+      "assertions": [
+        "Skips on.design without initiating login, asking for credentials, or trying another browser to obtain access.",
+        "Continues the research using another relevant accessible source.",
+        "Does not claim to have inspected Popular items or infer their appearance from the login page."
+      ]
+    },
+    {
+      "skill": "yum",
+      "id": "on-design-popular-default",
+      "prompt": "Find visual inspiration using on.design. The available browser is already signed in and https://on.design/ shows Popular selected.",
+      "assertions": [
+        "Starts with the existing Popular homepage view without inventing a /popular path or switching to another sort.",
+        "Inspects relevant items before describing them, with actual links and creator attribution when available.",
+        "Does not present popularity as proof of usability or conversion performance."
+      ]
+    }
+  ]
+}

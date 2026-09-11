@@ -41,7 +41,7 @@ jobs:
           python3 - <<'EOF'
           import glob, json, sys
           failed = 0
-          files = glob.glob(".claude-plugin/*.json") + glob.glob("skills/*/.claude-plugin/*.json") + glob.glob("skills/*/tokens/*.json")
+          files = glob.glob(".claude-plugin/*.json") + glob.glob("skills/*/.claude-plugin/*.json") + glob.glob("skills/*/skills/*/tokens/*.json")
           for f in sorted(files):
               try:
                   json.load(open(f))
@@ -56,7 +56,7 @@ jobs:
           python3 - <<'EOF'
           import json, subprocess, sys
           failed = 0
-          for f in ("README.md", "skills/flow/README.md"):
+          for f in ("README.md", "skills/flow/README.md", "skills/delight/README.md", "skills/yum/README.md"):
               out = subprocess.run(
                   ["python3", "skills/mimesis/linter", "--json", f],
                   capture_output=True, text=True).stdout
@@ -78,6 +78,16 @@ jobs:
 
       - name: Flow self-check
         run: |
-          python3 skills/flow/scripts/scan_tokens.py skills/flow/scripts > /dev/null
-          python3 -c "import json; json.load(open('skills/flow/tokens/flow.defaults.json'))"
+          python3 skills/flow/skills/flow/scripts/scan_tokens.py skills/flow/skills/flow/scripts > /dev/null
+          python3 -c "import json; json.load(open('skills/flow/skills/flow/tokens/flow.defaults.json'))"
           echo "flow scripts run"
+
+      - name: Check standalone skill resources
+        run: python3 scripts/validate-portable-skills.py skills/flow skills/delight skills/yum
+
+      - name: Keep temporary research out of Git
+        run: |
+          if [ -n "$(git ls-files -- references)" ]; then
+            echo "The root references directory must remain untracked."
+            exit 1
+          fi

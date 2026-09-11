@@ -1,5 +1,11 @@
 # Changelog
 
+## 3.0.0
+
+- Expose a broad `flow` pass with optional scope, review/apply mode, and focus.
+- Keep every skill self-contained; expose two focused specialists alongside the broad pass.
+- Replace mandatory gates and aesthetic prohibitions with scoped, evidence-led refinement; retire legacy adapters and installer.
+
 ## 2.0.0
 
 The polish layer. Ten new skills adapting the craft substance of [jakub.kr/skills](https://jakub.kr/skills) into Flow's diagnostic form, in Flow's own words.

@@ -1,0 +1,59 @@
+{
+  "description": "Behavioural regression prompts. Run each with its named skill in isolation and the stated evidence or tool conditions. Assertions require judging the resulting work; static validation does not execute these scenarios.",
+  "cases": [
+    {
+      "skill": "delight",
+      "id": "pending-is-not-success",
+      "prompt": "Make this Save interaction feel satisfying. It sets saving=true, awaits saveDraft(), then either shows Saved or keeps the draft with a Retry action. Users may keep typing during the request.",
+      "assertions": [
+        "Acknowledges input without claiming success before saveDraft resolves.",
+        "Preserves edits and recovery on rejection; handles a newer edit superseding old feedback.",
+        "Defines a meaningful reduced-motion and silent result.",
+        "Does not introduce a streak, mascot, or reward economy."
+      ]
+    },
+    {
+      "skill": "delight",
+      "id": "duplicate-publish-event",
+      "prompt": "Specify our first-publish celebration. The server emits publish.completed with publicationId; the subscription may redeliver it and the view can remount. Users can leave while publishing.",
+      "assertions": [
+        "Ties celebration to confirmed completion rather than the click or render.",
+        "Specifies replay suppression at an appropriate scope without suppressing the result.",
+        "Handles navigation and continuation without trapping the user.",
+        "Includes a still or reduced-motion result."
+      ]
+    },
+    {
+      "skill": "delight-character",
+      "id": "small-character-scope",
+      "prompt": "Write a production brief for a static mascot with three poses: waiting, success, and retry. Its rules are a circular blue body, two dot eyes, no mouth, and white mitten hands. Use those rules exactly.",
+      "assertions": [
+        "Preserves the supplied identity including no mouth.",
+        "Defines readable poses and the relevant state triggers.",
+        "Does not introduce speech, lip-sync, a cast, or a runtime dependency.",
+        "Does not claim assets were generated when only a brief was requested."
+      ]
+    },
+    {
+      "skill": "delight-habits",
+      "id": "irregular-practice",
+      "prompt": "Design progress tracking for adults who choose to practise twice a week. We want a streak, but have not decided on weekly qualification or missed-week recovery. No monetisation is in scope.",
+      "assertions": [
+        "Uses the chosen cadence rather than silently forcing daily practice.",
+        "Makes qualification and recovery explicit.",
+        "Distinguishes practice frequency from learning outcomes.",
+        "Does not invent paid freezes or guilt reminders."
+      ]
+    },
+    {
+      "skill": "delight",
+      "id": "screenshot-limits",
+      "prompt": "Review a static screenshot described by its attached text alternative: a success check, Saved label, and enabled Continue button. There is no code, recording, or live app. Can you verify our celebration never repeats and supports reduced motion?",
+      "assertions": [
+        "Does not claim replay or reduced-motion behaviour is verified.",
+        "Reports those checks as unknown, not demonstrated DELIGHT violations.",
+        "Keeps the review read-only and does not invent defects to fill the taxonomy."
+      ]
+    }
+  ]
+}
