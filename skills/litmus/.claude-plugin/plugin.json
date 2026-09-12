@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
+  "name": "litmus",
+  "displayName": "Litmus",
+  "version": "1.0.0",
+  "description": "Evidence-led QA passes for web and mobile, with focused intermittent-failure diagnosis.",
+  "author": {
+    "name": "Blake Cyze",
+    "url": "https://cyze.dev"
+  },
+  "homepage": "https://github.com/blakecyze/skills",
+  "repository": "https://github.com/blakecyze/skills",
+  "license": "MIT",
+  "keywords": [
+    "testing",
+    "qa",
+    "regression",
+    "web",
+    "mobile",
+    "reliability"
+  ]
+}

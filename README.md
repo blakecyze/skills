@@ -1,6 +1,6 @@
 # skills
 
-Six skill libraries for AI coding agents: code, prose, orchestration, interface design, product delight, and design research.
+Seven skill libraries for AI coding agents: code, prose, orchestration, interface design, product delight, design research, and QA.
 
 Each library turns judgement into a concrete decision or check: which code to delete, what makes a sentence weak, whether an animation blocks the task, or what a design reference actually proves. They work in Claude Code, Cursor, Codex, and other agents that read skill files.
 
@@ -20,6 +20,7 @@ Or, in Claude Code, install any library as a plugin:
 /plugin install flow@cyze
 /plugin install delight@cyze
 /plugin install yum@cyze
+/plugin install litmus@cyze
 ```
 
 Each library also stands alone. Its own README covers tool-specific installers and configuration.
@@ -92,6 +93,15 @@ Focused skills: [flow-motion](skills/flow/skills/flow-motion/SKILL.md), [flow-ac
 
 Each includes its own resources. Installation and migration notes: [Flow](skills/flow/README.md), [Delight](skills/delight/README.md), [Yum](skills/yum/README.md).
 
+### [litmus](skills/litmus)
+
+Behavioural QA with evidence tied to the tested build and environment.
+
+| Skill | Purpose |
+|---|---|
+| [litmus](skills/litmus/skills/litmus/SKILL.md) | Plan, run, or repair a scoped web or mobile QA pass |
+| [litmus-flakes](skills/litmus/skills/litmus-flakes/SKILL.md) | Diagnose intermittent failures without retrying until green |
+
 ## Layout
 
 ```
@@ -102,6 +112,7 @@ skills/
   flow/       design
   delight/    product feedback
   yum/        design research
+  litmus/     QA
 ```
 
 Each library is a complete Claude Code plugin with its own README, changelog, and licence. The standalone repos ([kanso](https://github.com/blakecyze/kanso), [mimesis](https://github.com/blakecyze/mimesis), [swarm](https://github.com/blakecyze/swarm)) remain live. This repo is the front door.

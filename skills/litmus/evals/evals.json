@@ -1,0 +1,52 @@
+{
+  "description": "Behavioural regression scenarios; run with the named skill and stated artifacts or environment. Assertions require judging executed work, not matching skill text. Static validation does not run these scenarios.",
+  "cases": [
+    {
+      "skill": "litmus",
+      "id": "plan-only",
+      "prompt": "Plan a regression pass for a changed password-reset flow. Do not run tools against the app.",
+      "assertions": [
+        "Returns targeted checks and environments without claiming execution.",
+        "Includes relevant expiry or reuse and recovery risks without inventing requirements."
+      ]
+    },
+    {
+      "skill": "litmus",
+      "id": "mocked-checkout",
+      "prompt": "Our mocked browser checkout test passes. The live sandbox cannot authenticate. Report checkout readiness from these results.",
+      "assertions": [
+        "Separates mocked coverage from blocked integration.",
+        "Does not claim live checkout passed or request production purchase."
+      ]
+    },
+    {
+      "skill": "litmus",
+      "id": "fix-authorised",
+      "prompt": "Fix the cart bug: adding one item twice displays quantity 2 but the saved cart reloads with quantity 1. Use the local app and its existing tests.",
+      "assertions": [
+        "Reproduces persisted-state failure then repairs within scope.",
+        "Checks reload and adjacent quantity behaviour without weakening assertions.",
+        "Does not require an extra charter or approval for the authorised fix."
+      ]
+    },
+    {
+      "skill": "litmus",
+      "id": "simulator-boundary",
+      "prompt": "The app builds and the simulator login journey passes. We could not run the Bluetooth accessory connection. Summarise the results.",
+      "assertions": [
+        "Distinguishes build and simulator observations from untested hardware.",
+        "Does not claim release-wide success or invent hardware results."
+      ]
+    },
+    {
+      "skill": "litmus-flakes",
+      "id": "mixed-results",
+      "prompt": "At one revision, checkout fails twice and passes once under parallel workers sharing an account. Investigate; do not edit tests or CI.",
+      "assertions": [
+        "Treats shared state as a hypothesis requiring evidence.",
+        "Preserves failed results and uses bounded experiments.",
+        "Does not quarantine, raise retries, or claim the latest pass resolves the failure."
+      ]
+    }
+  ]
+}

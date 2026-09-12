@@ -47,6 +47,13 @@
       "description": "Find, compare, and adapt relevant design references in one scoped pass.",
       "category": "design",
       "tags": ["design", "research", "inspiration", "ux", "references"]
+    },
+    {
+      "name": "litmus",
+      "source": "./skills/litmus",
+      "description": "Evidence-led QA passes for web and mobile, with focused intermittent-failure diagnosis.",
+      "category": "engineering",
+      "tags": ["testing", "qa", "reliability"]
     }
   ]
 }
