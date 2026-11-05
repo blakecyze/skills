@@ -24,7 +24,7 @@ Compression comes from distance; a long lens just keeps the framing from further
 
 ## Depth of field
 
-Render scale matters. At 1.9 m wide, an 85 mm lens from 8.4 m at f/2.8 gives about 0.6 px of blur, so skip it at full-device framing. Calculated.
+Render scale matters. For a 1.9 m object shot at 85 mm from 8.4 m, f/2.8 was calculated to give under a pixel of blur in that scene, so skip depth of field at full-object framing.
 
 Macro values at that scale (Tested): f/0.09 turned everything to mush; f/0.55 was right 2 m from the keys; f/2.2 was right for the knob. Focus exactly on the hero element. Rescale these for another object.
 

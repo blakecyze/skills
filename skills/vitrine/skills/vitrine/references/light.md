@@ -31,7 +31,7 @@ Position is (side, front to back, height) in W from the object, with the camera 
 | Screen as light | Real place, device on | Warm lamp 1.2, 340 W. Warm back strip 120 W | `#3A2A20`, roughness 0.32, world 0.025. Screen emission 2.6 |
 | Raking | Crafted, tactile | Low light 0.16 skimming the surface, 420 W | Dark, `#2B2C30`. For macros of grooves and bevels |
 | Window / gobo | A moment, a story | Tiny warm light 0.06, 3400 W, through slats | `#E8DCC6`. Once per set; shadows across a screen hurt it |
-| Sky wall | Heroic, airy | Sun 0.13, 1800 W. Separate wall wash 900 W | `#8FB6E6`, world 0.45. Pair with a low wide lens |
+| Sky wall | Heroic, airy | Sun 0.13, 1800 W. Separate wall wash 900 W | `#8FB6E6`, world 0.45. Pair with a low camera and a wide lens |
 | Soft elevation | Precise, product sheet | Soft top 2.6, 240 W. Key 0.8, 280 W | `#AEB4BB`, world 0.22. Straight on |
 
 ## Rules
@@ -66,7 +66,7 @@ For post, crush whites and blacks slightly, keep bloom and grain subtle, and gra
 Model quality shows at macro, so fix geometry before lighting.
 
 - Booleans plus smooth bevels leave creases around cuts in flat faces. Add a Weighted Normal modifier: `mode = FACE_AREA`, `weight = 100`, `keep_sharp = True`.
-- Bevels must survive downscaling: 0.7% of W is 3 to 4 px at 960. Try 1 to 1.5%. Untested.
+- Bevels must survive downscaling: 0.7% of W came to 3 to 4 px in a 960 px frame with the object about half its width. Try 1 to 1.5%. Untested.
 - One thin part line and a screw or printed mark give high return per pixel. Sourced: Gibbons.
 - Vary roughness slightly; one value flattens surfaces. Sourced.
 - Keep a separate object for each moving part from the start, so it can be layered later.

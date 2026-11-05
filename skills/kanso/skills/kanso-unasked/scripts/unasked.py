@@ -13,6 +13,7 @@ Files live in the repo's git directory, or a temp folder if that is protected, s
 import argparse
 import hashlib
 import json
+import os
 import re
 import subprocess
 import sys
@@ -51,12 +52,17 @@ def writable_store():
         (store / ".probe").unlink()
     except OSError:
         store = Path(tempfile.gettempdir()) / ("unasked-" + hashlib.sha1(str(ROOT).encode()).hexdigest()[:12])
-        store.mkdir(exist_ok=True)
+        store.mkdir(mode=0o700, exist_ok=True)
+        # Anyone can pre-create this name in a shared temp folder, and cut applies the patches it finds there.
+        if store.is_symlink() or (hasattr(os, "getuid") and store.stat().st_uid != os.getuid()):
+            sys.exit(f"{store} belongs to someone else, so it cannot be trusted. Nothing was read or changed.")
     return store
 
 
 STORE = writable_store()
-GIT_DIFF = ("git", "-c", "core.quotepath=off", "diff", "--no-color", "--no-ext-diff", "--no-renames", "--binary", "-U1")
+# Fixed options, so no user or repo config can change the patch shape that a cut replays.
+DIFF_OPTIONS = ("--no-color", "--no-ext-diff", "--no-textconv", "--no-renames", "--binary", "-U1", "--inter-hunk-context=0", "--src-prefix=a/", "--dst-prefix=b/")
+GIT_DIFF = ("git", "-c", "core.quotepath=off", "-c", "core.fsmonitor=false", "diff", *DIFF_OPTIONS)
 
 
 def resolve_base(requested):
@@ -125,7 +131,7 @@ def cmd_collect(args):
     label, base = resolve_base(args.base)
     text = run(*GIT_DIFF, base)
     for path in filter(None, run("git", "ls-files", "-o", "--exclude-standard", "-z").split("\0")):
-        text += run(*GIT_DIFF[:3], "diff", "--no-color", "--no-ext-diff", "--no-renames", "--binary", "-U1", "--no-index", "/dev/null", path, ok=(0, 1))
+        text += run(*GIT_DIFF, "--no-index", "--", "/dev/null", path, ok=(0, 1))
     sections = parse_sections(text)
     hunks, count = [], 0
     for index, section in enumerate(sections):
@@ -134,9 +140,11 @@ def cmd_collect(args):
             count += 1
             added = sum(l.startswith("+") for l in part["lines"]) if part else 0
             removed = sum(l.startswith("-") for l in part["lines"]) if part else 0
-            hunks.append({"id": f"h{count}", "section": index, "path": section["path"], "added": added, "removed": removed, "old": part["old"] if part else 0, "new": part["new"] if part else 0, "lines": part["lines"] if part else [], "whole_file": part is None, "noise": bool(LOCKFILE.search(section["path"]))})
+            hunks.append({"id": f"h{count}", "section": index, "path": section["path"], "added": added, "removed": removed, "old": part["old"] if part else 0, "new": part["new"] if part else 0, "lines": part["lines"] if part else [], "whole_file": part is None, "noise": bool(LOCKFILE.search(section["path"])), "mode_change": bool(part) and any(h.startswith("new mode") for h in section["header"])})
     state = {"base": base, "base_label": label, "branch": run("git", "branch", "--show-current").strip() or "(detached)", "sections": [{"path": s["path"], "header": s["header"], "raw": s["raw"], "new_file": s["new_file"]} for s in sections], "hunks": hunks}
-    (STORE / "hunks.json").write_text(json.dumps(state, ensure_ascii=True))
+    (STORE / "hunks.json").write_text(json.dumps(state, ensure_ascii=True), encoding="utf-8")
+    # Item numbers point at hunk ids, which have just changed.
+    (STORE / "items.json").unlink(missing_ok=True)
     total = sum(h["added"] + h["removed"] for h in hunks if not h["noise"])
     print(f"base {base[:8]} ({label}) on {state['branch']}: {len(sections)} files, {len(hunks)} hunks, {total} changed lines")
     if not hunks:
@@ -144,7 +152,7 @@ def cmd_collect(args):
         return
     long_form = sum(len(h["lines"]) for h in hunks) <= PRINT_LIMIT
     for hunk in hunks:
-        print(f"\n{hunk['id']} {hunk['path']} +{hunk['added']} -{hunk['removed']}" + (" (whole file: binary, mode, or empty)" if hunk["whole_file"] else "") + (" (lockfile: not counted)" if hunk["noise"] else ""))
+        print(f"\n{hunk['id']} {hunk['path']} +{hunk['added']} -{hunk['removed']}" + (" (whole file: binary, mode, or empty)" if hunk["whole_file"] else "") + (" (lockfile: not counted)" if hunk["noise"] else "") + (" (file mode also changed; a cut leaves that alone)" if hunk["mode_change"] else ""))
         if hunk["noise"]:
             continue
         print_hunk(hunk, None if long_form else 30)
@@ -162,7 +170,7 @@ def load_state():
     path = STORE / "hunks.json"
     if not path.exists():
         sys.exit("Run collect first.")
-    return json.loads(path.read_text())
+    return json.loads(path.read_text(encoding="utf-8"))
 
 
 def cmd_show(args):
@@ -239,6 +247,8 @@ def classify(state, data):
             errors.append(f"asked entry {entry.get('hunks')}: quote must be verbatim from ask, got {quote!r}")
         if kind == "needed" and not entry.get("because"):
             errors.append(f"needed entry {entry.get('hunks')}: say why the request fails without it")
+        if not entry.get("hunks"):
+            errors.append(f"asked entry {quote!r}: cite the hunks it covers")
         claim(entry.get("hunks") or [], kind)
     items = data.get("items") or []
     for index, item in enumerate(items):
@@ -281,7 +291,7 @@ def evidence(state, refs):
 
 def cmd_render(args):
     state = load_state()
-    data = json.loads(Path(args.items).read_text())
+    data = json.loads(Path(args.items).read_text(encoding="utf-8"))
     asks, items, claims = classify(state, data)
     order = sorted(range(len(items)), key=lambda i: (KINDS[items[i]["kind"]] == KINDS["decision"], IMPACTS[items[i]["impact"]], KINDS[items[i]["kind"]]))
     numbers = {index: rank + 1 for rank, index in enumerate(order)}
@@ -338,14 +348,14 @@ def cmd_render(args):
     by_id = {h["id"]: h["path"] for h in state["hunks"]}
     for entry in report["asked"]:
         entry["paths"] = sorted({by_id[h] for h in entry["paths"]})
-    (STORE / "items.json").write_text(json.dumps(resolved, ensure_ascii=True))
+    (STORE / "items.json").write_text(json.dumps(resolved, ensure_ascii=True), encoding="utf-8")
     total = sum(totals.values())
     if not resolved:
         print(f"Nothing unasked: all {total} changed lines trace to the request. No report written.")
         return
     payload = json.dumps(report, ensure_ascii=True).replace("<", "\\u003c").replace(">", "\\u003e").replace("&", "\\u0026")
     out = STORE / "report.html"
-    out.write_text(TEMPLATE.read_text().replace("/*DATA*/null", payload))
+    out.write_text(TEMPLATE.read_text(encoding="utf-8").replace("/*DATA*/null", payload), encoding="utf-8")
     share = round(100 * totals["unasked"] / total) if total else 0
     print(f"{totals['unasked']} of {total} changed lines ({share}%) were not asked for. {totals['asked']} asked, {totals['needed']} needed.")
     for item in resolved:
@@ -372,11 +382,13 @@ def patch_for(state, refs):
         hunks = [h for h in state["hunks"] if h["section"] == index and h["id"] in selected]
         if not hunks:
             continue
+        if any(line.startswith("index ") and "160000" in line for line in section["header"]):
+            sys.exit(f"{section['path']} is a submodule. Change it by hand; nothing was cut.")
         whole = all(selected[h["id"]] >= changed_positions(h) for h in hunks) and len(hunks) == sum(h["section"] == index for h in state["hunks"])
         if hunks[0]["whole_file"] or (whole and section["new_file"]):
             out.append(section["raw"])
             continue
-        header = section["header"]
+        header = [line for line in section["header"] if not line.startswith(("old mode", "new mode"))]
         if section["new_file"]:
             # Only part of a new file is going, so the file itself stays: patch it as a modification.
             path = section["path"]
@@ -384,6 +396,8 @@ def patch_for(state, refs):
         out.append("\n".join(header) + "\n")
         for hunk in hunks:
             chosen = selected[hunk["id"]]
+            if not chosen >= changed_positions(hunk) and any(line.startswith("\\") for line in hunk["lines"]):
+                sys.exit(f"{hunk['id']} changes a missing final newline, so it can only be cut whole. Change it by hand; nothing was cut.")
             body, previous_kept = [], True
             for i, line in enumerate(hunk["lines"]):
                 if line.startswith("\\"):
@@ -416,8 +430,8 @@ def cmd_cut(args):
     state = load_state()
     path = STORE / "items.json"
     if not path.exists():
-        sys.exit("Run render first.")
-    items = {str(item["n"]): item for item in json.loads(path.read_text())}
+        sys.exit("Run render first: hunks were renumbered, so earlier item numbers no longer apply.")
+    items = {str(item["n"]): item for item in json.loads(path.read_text(encoding="utf-8"))}
     refs = []
     for number in args.items:
         if number not in items:
@@ -429,7 +443,7 @@ def cmd_cut(args):
     undo_dir = STORE / "undo"
     undo_dir.mkdir(exist_ok=True)
     undo = undo_dir / f"{time.strftime('%Y%m%d-%H%M%S')}-{'-'.join(args.items)}.patch"
-    undo.write_text(patch, errors="surrogateescape")
+    undo.write_text(patch, errors="surrogateescape", encoding="utf-8")
     failure = apply_patch(undo, reverse=True)
     if failure:
         undo.unlink()
@@ -451,6 +465,7 @@ def cmd_undo(args):
 
 
 def main():
+    sys.stdout.reconfigure(errors="replace")
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     commands = parser.add_subparsers(dest="command", required=True)
     collect = commands.add_parser("collect")
