@@ -41,7 +41,7 @@ STATE, IGNORE, IMAGES_PAGE, DUPES_PAGE = ".state.json", ".ignore", "images.md", 
 
 
 def git(*args, check=True):
-    done = subprocess.run(["git", *args], cwd=CWD, capture_output=True)
+    done = subprocess.run(["git", "-c", "core.fsmonitor=false", *args], cwd=CWD, capture_output=True)
     if check and done.returncode:
         sys.exit(f"git {args[0]} failed: {done.stderr.decode(errors='replace').strip()}")
     return done.stdout.decode(errors="surrogateescape")
@@ -52,11 +52,19 @@ CWD = Path.cwd()
 
 def locate():
     """The checkout root, and the map, which lives in the main checkout so worktrees share one."""
+    global CWD
     root = git("rev-parse", "--show-toplevel", check=False).strip()
     if not root:
         sys.exit("map needs a git repository")
     common = (CWD / git("rev-parse", "--git-common-dir").strip()).resolve()
+    # git prints paths relative to where it runs, and every path here is relative to the root.
+    CWD = Path(root)
     return Path(root), common.parent / "map"
+
+
+def foreign(map_dir):
+    """A map is git-ignored, so tracked files mean someone else's folder, possibly a hostile one. Never read or write it."""
+    return map_dir.is_symlink() or bool(git("ls-files", "--", str(map_dir), check=False).strip())
 
 
 def blob_id(path):
@@ -81,7 +89,7 @@ def tree(root, map_dir):
         if (root / path).is_file():
             files[path] = blob_id(root / path)
     ignore = map_dir / IGNORE
-    excluded = [glob_regex(line) for line in ignore.read_text().splitlines() if line.strip() and not line.startswith("#")] if ignore.exists() else []
+    excluded = [glob_regex(line) for line in ignore.read_text(encoding="utf-8").splitlines() if line.strip() and not line.startswith("#")] if ignore.exists() else []
     return {path: blob for path, blob in files.items() if not path.startswith("map/") and not any(rx.match(path) for rx in excluded)}
 
 
@@ -97,7 +105,7 @@ def read(root, path, limit=512_000):
     target = root / path
     if not target.is_file() or target.stat().st_size > limit:
         return ""
-    return target.read_text(errors="replace")
+    return target.read_text(encoding="utf-8", errors="replace")
 
 
 def glob_regex(pattern):
@@ -121,16 +129,16 @@ def covers(text):
 
 
 def pages(map_dir):
-    return sorted(map_dir.rglob("*.md"))
+    return sorted(p for p in map_dir.rglob("*.md") if p.is_file() and not p.is_symlink())
 
 
 def load_state(map_dir):
     path = map_dir / STATE
-    return json.loads(path.read_text()) if path.exists() else {"pages": {}, "images": {}}
+    return json.loads(path.read_text(encoding="utf-8")) if path.exists() else {"pages": {}, "images": {}}
 
 
 def save_state(map_dir, state):
-    (map_dir / STATE).write_text(json.dumps(state, indent=0, sort_keys=True))
+    (map_dir / STATE).write_text(json.dumps(state, indent=0, sort_keys=True), encoding="utf-8")
 
 
 def covered(page_name, text, files):
@@ -147,7 +155,7 @@ def stale_pages(map_dir, files, state):
     result = {}
     for page in pages(map_dir):
         name = page.relative_to(map_dir).as_posix()
-        current = covered(name, page.read_text(), files)
+        current = covered(name, page.read_text(encoding="utf-8"), files)
         if not current and name not in (IMAGES_PAGE, DUPES_PAGE):
             continue
         stamped = state["pages"].get(name)
@@ -171,10 +179,11 @@ def kept_column(path):
     if not path.exists():
         return {}
     kept = {}
-    for line in path.read_text().splitlines():
+    for line in path.read_text(encoding="utf-8").splitlines():
         cells = table_cells(line) if line.startswith("|") else []
         if len(cells) >= 2 and cells[-1] and not set(cells[0]) <= set("-: "):
-            kept[cells[0].strip("`")] = cells[-1]
+            link = re.match(r"\[([^\]]+)\]\(", cells[0])
+            kept[link[1] if link else cells[0].strip("`")] = cells[-1]
     return kept
 
 
@@ -184,8 +193,6 @@ def cell(value):
 
 def cmd_init(root, map_dir, args):
     home = map_dir.parent
-    if git("ls-files", "--", str(map_dir), check=False).strip():
-        sys.exit("map/ holds tracked files. It is not this skill's folder, so nothing was changed.")
     if map_dir.exists() and any(map_dir.iterdir()) and not (map_dir / STATE).exists():
         sys.exit("map/ already exists and was not made by this skill, so nothing was changed.")
     (map_dir / "images").mkdir(parents=True, exist_ok=True)
@@ -194,8 +201,11 @@ def cmd_init(root, map_dir, args):
     ignored = subprocess.run(["git", "check-ignore", "-q", "map/"], cwd=home).returncode == 0
     if not ignored:
         gitignore = home / ".gitignore"
-        existing = gitignore.read_text() if gitignore.exists() else ""
-        gitignore.write_text(existing + ("" if not existing or existing.endswith("\n") else "\n") + "/map/\n")
+        if gitignore.is_symlink():
+            sys.exit(".gitignore is a symlink, so nothing was changed. Add /map/ to it by hand, then run init again.")
+        existing = gitignore.read_bytes() if gitignore.exists() else b""
+        newline = b"\r\n" if b"\r\n" in existing else b"\n"
+        gitignore.write_bytes(existing + (b"" if not existing or existing.endswith(b"\n") else newline) + b"/map/" + newline)
     print(f"map ready at {map_dir}" + ("" if ignored else " (added /map/ to .gitignore)"))
 
 
@@ -351,7 +361,9 @@ def cmd_dupes(root, map_dir, args):
         return
     target = map_dir / DUPES_PAGE
     decisions = kept_column(target)
-    shown = rows[:REGISTER_ROWS // 3]
+    # A decision outlives the row limit, or the next regeneration would lose it.
+    decided = [row for row in rows if decisions.get(row[1])]
+    shown = decided + [row for row in rows if not decisions.get(row[1])][: max(REGISTER_ROWS // 3 - len(decided), 0)]
     out = [
         "# Duplicates",
         "",
@@ -368,7 +380,7 @@ def cmd_dupes(root, map_dir, args):
         out.append(f"| {key} | {kind} | {cell(size)} | {' '.join(where[:6])}{f' +{len(where) - 6}' if len(where) > 6 else ''} | {cell(decision)} |")
     if len(rows) > len(shown):
         out += ["", f"{len(rows) - len(shown)} smaller groups not listed."]
-    target.write_text("\n".join(out) + "\n")
+    target.write_text("\n".join(out) + "\n", encoding="utf-8")
     stamp(map_dir, files, [DUPES_PAGE])
     print(f"wrote {target}")
 
@@ -448,7 +460,7 @@ def cmd_images(root, map_dir, args):
             used = rows[path]["used"]
             who = " ".join(f"`{u}`" for u in used[:2]) + (f" +{len(used) - 2}" if len(used) > 2 else "")
             out.append(f"| `{path}` | {rows[path]['kb']} | {who} | {cell(shows.get(path) or moved.get(images[path], ''))} |")
-    target.write_text("\n".join(out) + "\n")
+    target.write_text("\n".join(out) + "\n", encoding="utf-8")
     state["images"] = images
     save_state(map_dir, state)
     stamp(map_dir, files, [IMAGES_PAGE])
@@ -461,7 +473,7 @@ def stamp(map_dir, files, names):
         page = map_dir / name
         if not page.exists():
             sys.exit(f"no such page: {name}")
-        state["pages"][name] = covered(name, page.read_text(), files)
+        state["pages"][name] = covered(name, page.read_text(encoding="utf-8"), files)
     save_state(map_dir, state)
 
 
@@ -481,7 +493,7 @@ def lint(root, map_dir, files):
     graph, used = {}, set()
     for page in all_pages:
         name = page.relative_to(map_dir).as_posix()
-        text = page.read_text()
+        text = page.read_text(encoding="utf-8")
         rows = text.splitlines()
         if len(rows) > PAGE_LIMIT:
             errors.append(f"{name}: {len(rows)} lines, over the limit of {PAGE_LIMIT}")
@@ -558,7 +570,7 @@ def cmd_check(root, map_dir, args):
     for page in pages(map_dir):
         name = page.relative_to(map_dir).as_posix()
         if name not in (IMAGES_PAGE, DUPES_PAGE):
-            mapped |= set(covered(name, page.read_text(), files))
+            mapped |= set(covered(name, page.read_text(encoding="utf-8"), files))
     loose = Counter(p.split("/")[0] for p in code_files(files) if p not in mapped)
     for line in warnings:
         print(f"warning: {line}")
@@ -578,8 +590,7 @@ def cmd_status(root, map_dir, args):
         return
     stale = stale_pages(map_dir, tree(root, map_dir), load_state(map_dir))
     if stale:
-        names = ", ".join(sorted(stale)[:4]) + (f" +{len(stale) - 4}" if len(stale) > 4 else "")
-        print(f"Project map: {len(stale)} page(s) out of date ({names}). Treat them with suspicion, and refresh with the map skill when you next rely on them.")
+        print(f"Project map: {len(stale)} page(s) out of date. Treat them with suspicion, and refresh with the map skill when you next rely on them.")
 
 
 def main():
@@ -601,6 +612,10 @@ def main():
     stamp_parser.add_argument("pages", nargs="*")
     args = parser.parse_args()
     root, map_dir = locate()
+    if foreign(map_dir):
+        if args.command == "status":
+            return
+        sys.exit("map/ holds tracked files or is a symlink. It is not this skill's folder, so nothing was read or changed.")
     globals()["cmd_" + args.command](root, map_dir, args)
 
 

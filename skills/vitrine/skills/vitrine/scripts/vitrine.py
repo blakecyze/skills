@@ -114,10 +114,22 @@ def ray_edges(labs, values, w, h):
     return found
 
 
+def load(path):
+    """Upright RGB as a viewer sees it: transparency over a white page, 16-bit values scaled instead of clipped."""
+    image = ImageOps.exif_transpose(Image.open(path))
+    if image.mode.startswith("I"):
+        image = image.point(lambda value: value * (1 / 256)).convert("L")
+    if image.mode in ("RGBA", "LA", "PA") or "transparency" in image.info:
+        rgba = image.convert("RGBA")
+        page = Image.new("RGBA", rgba.size, "white")
+        page.alpha_composite(rgba)
+        return page.convert("RGB")
+    return image.convert("RGB")
+
+
 def measure(path):
-    source = Image.open(path)
-    width, height = source.size
-    image = ImageOps.exif_transpose(source).convert("RGB")
+    image = load(path)
+    width, height = image.size
     image.thumbnail((ANALYSIS_EDGE, ANALYSIS_EDGE))
     w, h = image.size
     pixels = list(image.getdata())
@@ -132,6 +144,10 @@ def measure(path):
         "ground": None,
     }
     edges = ray_edges(labs, values, w, h)
+    if not any(edges.values()):
+        ground_rgb = median_rgb(pixels)
+        result.update(ground=hex_of(ground_rgb), ground_lab=oklab(ground_rgb), ground_l=luminance_star(ground_rgb), fill=0)
+        return result
     margin = max(2, round(max(w, h) * RING))
     rays = {"L": len(range(0, h, 2)), "R": len(range(0, h, 2)), "T": len(range(0, w, 2)), "B": len(range(0, w, 2))}
     # A ground exists if most of the frame's border leads somewhere before anything happens.
@@ -178,7 +194,9 @@ def flags(shot):
         found.append("no clear ground: too much happens at the border to measure jump and fill")
     else:
         jump, fill = shot.get("jump"), shot.get("fill", 0)
-        if fill >= FILLS_FRAME:
+        if not fill:
+            found.append("a single colour: no subject to measure")
+        elif fill >= FILLS_FRAME:
             found.append("fills the frame: outline contrast not measured, judge by eye")
         elif jump is not None and jump < LOW_JUMP:
             found.append(f"low value jump ({jump:.0f} L*): the outline melts into the ground without a strong shadow")
@@ -204,7 +222,7 @@ def sheet(shots, out, size, columns):
     gap, label = 16, 18
     tiles = []
     for shot in shots:
-        tile = ImageOps.exif_transpose(Image.open(shot["path"])).convert("RGB")
+        tile = load(shot["path"])
         tile.thumbnail((size, size * 2), Image.LANCZOS)
         tiles.append(tile)
     row_height = max(t.height for t in tiles) + label
