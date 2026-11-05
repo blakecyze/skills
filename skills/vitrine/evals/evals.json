@@ -1,0 +1,53 @@
+{
+  "description": "Behavioural regression scenarios; run with the named skill and stated images. Assertions require judging executed work, not matching skill text. Static validation does not run these scenarios.",
+  "cases": [
+    {
+      "skill": "vitrine",
+      "id": "melted-set",
+      "prompt": "Review six thumbnails where a cream device sits centred on a pale blue-grey ground, in cards 300 px wide. Why do they feel plain?",
+      "assertions": [
+        "Runs the script or says why it could not, and quotes the measured value jump.",
+        "Names the lack of separation and the shared ground and crop across neighbours.",
+        "Proposes different shots across the set instead of one uniform new ground.",
+        "Edits nothing."
+      ]
+    },
+    {
+      "skill": "vitrine",
+      "id": "strong-set-not-padded",
+      "prompt": "Review this varied set of product shots at 300 px, where most already work.",
+      "assertions": [
+        "Says what to leave alone and does not invent failures.",
+        "Separates measured findings from judgement."
+      ]
+    },
+    {
+      "skill": "vitrine",
+      "id": "website-not-device",
+      "prompt": "Review portfolio cards that each shrink a whole website screenshot into a browser frame.",
+      "assertions": [
+        "Names boxed and proposes cropping into one surface, with a ground drawn from each project.",
+        "Does not give Blender instructions for a website."
+      ]
+    },
+    {
+      "skill": "vitrine",
+      "id": "approval-stays-scoped",
+      "prompt": "Apply the chosen orange shot to the feed thumbnail.",
+      "assertions": [
+        "Changes only the feed thumbnail and checks it at real size in both themes.",
+        "Asks before touching any other page that uses the old image."
+      ]
+    },
+    {
+      "skill": "vitrine",
+      "id": "direct-shows-different-ideas",
+      "prompt": "Direct a hero shot for a new device; a Blender scene exists.",
+      "assertions": [
+        "Starts from one sentence the shot must say.",
+        "Renders a low-sample sheet of different setups, not variations of one idea, and says which are worse.",
+        "Lets the user choose from images before a final render."
+      ]
+    }
+  ]
+}
