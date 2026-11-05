@@ -1,6 +1,6 @@
 # skills
 
-Seven skill libraries for AI coding agents: code, prose, orchestration, interface design, product delight, design research, and QA.
+Nine skill libraries for AI coding agents: code, prose, orchestration, interface design, product delight, design research, QA, repo maps, and how work is shown.
 
 Each library turns judgement into a concrete decision or check: which code to delete, what makes a sentence weak, whether an animation blocks the task, or what a design reference actually proves. They work in Claude Code, Cursor, Codex, and other agents that read skill files.
 
@@ -21,6 +21,8 @@ Or, in Claude Code, install any library as a plugin:
 /plugin install delight@cyze
 /plugin install yum@cyze
 /plugin install litmus@cyze
+/plugin install map@cyze
+/plugin install vitrine@cyze
 ```
 
 Each library also stands alone. Its own README covers tool-specific installers and configuration.
@@ -50,6 +52,7 @@ Code. Keeps AI-written output short and honest: delete before you add, earn ever
 | [kanso-pr](skills/kanso/skills/kanso-pr/SKILL.md) | Pull request descriptions and branch summaries |
 | [kanso-context](skills/kanso/skills/kanso-context/SKILL.md) | Create and prune AGENTS.md / CLAUDE.md files |
 | [kanso-handoff](skills/kanso/skills/kanso-handoff/SKILL.md) | Packs the session into one file so `/clear` costs nothing |
+| [kanso-unasked](skills/kanso/skills/kanso-unasked/SKILL.md) | Shows every change you didn't ask for, then cuts what you reject |
 | [kanso-prompting](skills/kanso/skills/kanso-prompting/SKILL.md) | Rules for writing better prompts for frontier models |
 
 ### [mimesis](skills/mimesis)
@@ -88,10 +91,11 @@ Each pass accepts optional scope, `review` or `apply`, and focus. Use ordinary l
 | [flow](skills/flow/skills/flow/SKILL.md) | Refine layout, type, colour, controls, accessibility, copy, and motion |
 | [delight](skills/delight/skills/delight/SKILL.md) | Refine product feedback, celebrations, character reactions, and progress |
 | [yum](skills/yum/skills/yum/SKILL.md) | Find, compare, and adapt relevant design references |
+| [vitrine](skills/vitrine/skills/vitrine/SKILL.md) | Audit and art-direct how work is shown: product shots, thumbnails, cards, and heroes |
 
 Focused skills: [flow-motion](skills/flow/skills/flow-motion/SKILL.md), [flow-access](skills/flow/skills/flow-access/SKILL.md), [delight-character](skills/delight/skills/delight-character/SKILL.md), and [delight-habits](skills/delight/skills/delight-habits/SKILL.md). Use them for dedicated work; routine refinement stays in the broad pass.
 
-Each includes its own resources. Installation and migration notes: [Flow](skills/flow/README.md), [Delight](skills/delight/README.md), [Yum](skills/yum/README.md).
+Each includes its own resources. Installation and migration notes: [Flow](skills/flow/README.md), [Delight](skills/delight/README.md), [Yum](skills/yum/README.md), [Vitrine](skills/vitrine/README.md).
 
 ### [litmus](skills/litmus)
 
@@ -101,6 +105,14 @@ Behavioural QA with evidence tied to the tested build and environment.
 |---|---|
 | [litmus](skills/litmus/skills/litmus/SKILL.md) | Plan, run, or repair a scoped web or mobile QA pass |
 | [litmus-flakes](skills/litmus/skills/litmus-flakes/SKILL.md) | Diagnose intermittent failures without retrying until green |
+
+### [map](skills/map)
+
+A git-ignored map of what search cannot answer, for agents working in the repo.
+
+| Skill | Purpose |
+|---|---|
+| [map](skills/map/skills/map/SKILL.md) | Build and refresh computed duplicates, one image register, the choices search gets wrong, and pages that know when they are stale |
 
 ## Layout
 
@@ -113,6 +125,8 @@ skills/
   delight/    product feedback
   yum/        design research
   litmus/     QA
+  map/        repo context
+  vitrine/    showing work
 ```
 
 Each library is a complete Claude Code plugin with its own README, changelog, and licence. The standalone repos ([kanso](https://github.com/blakecyze/kanso), [mimesis](https://github.com/blakecyze/mimesis), [swarm](https://github.com/blakecyze/swarm)) remain live. This repo is the front door.
