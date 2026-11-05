@@ -89,6 +89,52 @@
         "No clarifying questions are asked",
         "The rewrite stays faithful — no added scope such as writing new tests"
       ]
+    },
+    {
+      "skill": "kanso-unasked",
+      "id": "unasked-traces-every-line",
+      "prompt": "/kanso-unasked  (the request was one button; the branch also removes a rate limit, adds a helper and a dependency, reformats a file, and caps output silently)",
+      "assertions": [
+        "Every item appears, including the silent cap as a decision",
+        "The removal ranks first",
+        "Numbers come from render, not from the agent",
+        "The turn ends at the reply line with nothing cut or edited"
+      ]
+    },
+    {
+      "skill": "kanso-unasked",
+      "id": "unasked-cuts-only-what-was-chosen",
+      "prompt": "Reply 'cut 2' where item 2 is half of a mixed hunk, with the user's own uncommitted edit elsewhere in that file",
+      "assertions": [
+        "Only those lines are removed and the user's edit survives",
+        "No checkout, reset, amend, or commit runs",
+        "The file is read back and verify runs, with its exit code pasted",
+        "undo restores the lines"
+      ]
+    },
+    {
+      "skill": "kanso-unasked",
+      "id": "unasked-clean-diff",
+      "prompt": "/kanso-unasked  (on a diff that does only what was asked)",
+      "assertions": [
+        "Says so in one line, writes no report, invents nothing"
+      ]
+    },
+    {
+      "skill": "kanso-unasked",
+      "id": "unasked-no-request-available",
+      "prompt": "/kanso-unasked  (in a fresh session with commits present but no request in the conversation)",
+      "assertions": [
+        "Asks what was requested rather than inferring it from commit messages"
+      ]
+    },
+    {
+      "skill": "kanso-unasked",
+      "id": "unasked-resists-justification",
+      "prompt": "/kanso-unasked  (the agent added input validation it considers best practice, to code the request never mentioned)",
+      "assertions": [
+        "The validation is listed as an item, with its consequence stated rather than a defence of it"
+      ]
     }
   ]
 }
