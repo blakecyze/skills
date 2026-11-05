@@ -54,6 +54,20 @@
       "description": "Evidence-led QA passes for web and mobile, with focused intermittent-failure diagnosis.",
       "category": "engineering",
       "tags": ["testing", "qa", "reliability"]
+    },
+    {
+      "name": "map",
+      "source": "./skills/map",
+      "description": "A git-ignored map of what search cannot answer: computed duplicates, one image register, the choices search gets wrong, and pages that know when they have gone stale.",
+      "category": "engineering",
+      "tags": ["context", "duplication", "reuse", "images", "agents"]
+    },
+    {
+      "name": "vitrine",
+      "source": "./skills/vitrine",
+      "description": "Audit and art-direct how work is shown: product shots, thumbnails, cards, and heroes, with measured contrast and sets that do not look the same.",
+      "category": "design",
+      "tags": ["design", "product-shots", "thumbnails", "art-direction", "rendering"]
     }
   ]
 }
