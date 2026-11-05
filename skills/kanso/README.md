@@ -2,7 +2,7 @@
 
 > 簡素: elimination of clutter.
 
-I kept watching Claude write code that ran fine and still felt puffy. Dead branches, comments that just say what the line already says, a whole helper for something used once. kanso pushes back. Nine skills that delete before they add, match your repo's voice, and earn every line, whether they're reviewing, refactoring, committing or writing a PR. Nothing gets written until you've seen the plan.
+I kept watching Claude write code that ran fine and still felt puffy. Dead branches, comments that just say what the line already says, a whole helper for something used once. kanso pushes back. Twelve skills that delete before they add, match your repo's voice, and earn every line, whether they're reviewing, refactoring, committing or writing a PR. Nothing gets written until you've seen the plan.
 
 ## Get it
 
@@ -38,6 +38,7 @@ One honest caveat: the edit-verify hook (the thing that lint-checks each edit as
 | `kanso-pr` | PR descriptions that stand on their own, drawn from your commits. | `/kanso-pr` |
 | `kanso-context` | Keeps `AGENTS.md` / `CLAUDE.md` lean. | `/kanso-context [mode]` |
 | `kanso-handoff` | Packs the session into one file so `/clear` costs nothing. | `/kanso-handoff [focus]` |
+| `kanso-unasked` | Shows every change you didn't ask for, then cuts what you reject. | `/kanso-unasked [request]` |
 
 ## What it looks like
 

@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'">
+<title>Unasked</title>
+<style>
+  :root {
+    --bg: #f6f3ec; --card: #fcfaf5; --ink: #1c1b18; --muted: #625e55; --line: #dfd9cb; --code: #efebe0;
+    --asked: #2f6f5e; --needed: #a3aea6; --unasked: #b93a12; --unasked-soft: #f7e3da; --removed-soft: #e9e5da; --on-accent: #fff;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #161510; --card: #1f1d17; --ink: #ece8dc; --muted: #a8a397; --line: #37342b; --code: #26241c;
+      --asked: #6cbfa6; --needed: #5f6b64; --unasked: #ff8558; --unasked-soft: #43241a; --removed-soft: #2c2a21; --on-accent: #1a1007;
+    }
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; scroll-padding-top: 16px; }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; padding-bottom: 96px; }
+  main { max-width: 880px; margin: 0 auto; padding: 40px 16px 24px; }
+  code, pre, .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+  .meta { color: var(--muted); font-size: 13px; margin: 0 0 28px; overflow-wrap: anywhere; }
+  .ask { margin: 0 0 32px; padding: 0 0 0 16px; border-left: 2px solid var(--line); color: var(--muted); white-space: pre-wrap; overflow-wrap: anywhere; }
+  .ask p { margin: 0 0 8px; }
+  h1 { font: 400 clamp(30px, 6vw, 46px)/1.12 "Iowan Old Style", Palatino, Georgia, serif; letter-spacing: -0.015em; margin: 0 0 24px; text-wrap: balance; }
+  h1 b { font-weight: 400; color: var(--unasked); }
+  h2 { font-size: 13px; font-weight: 600; margin: 40px 0 12px; color: var(--muted); }
+  .bar { display: flex; height: 14px; gap: 2px; border-radius: 3px; overflow: hidden; }
+  .bar i { display: block; min-width: 3px; }
+  .asked { background: var(--asked); } .needed { background: var(--needed); } .unasked { background: var(--unasked); }
+  .legend { display: flex; flex-wrap: wrap; gap: 6px 20px; margin: 12px 0 0; padding: 0; list-style: none; font-size: 13px; color: var(--muted); }
+  .legend i { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 7px; }
+  .legend b { color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
+  .file { display: grid; grid-template-columns: minmax(0, 260px) 1fr 44px; gap: 14px; align-items: center; padding: 5px 0; font-size: 13px; }
+  .file .mono { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; direction: rtl; text-align: left; }
+  .strip { display: flex; gap: 2px; height: 12px; }
+  .strip > * { display: block; min-width: 4px; border-radius: 1px; }
+  .strip a:hover, .strip a:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
+  .count { color: var(--muted); text-align: right; font-variant-numeric: tabular-nums; }
+  .tools { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+  .tools button { background: none; border: 0; padding: 6px 2px; color: var(--muted); font: inherit; font-size: 13px; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+  .tools button:hover { color: var(--ink); }
+  article { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 18px; margin: 0 0 12px; }
+  article.cut { border-color: var(--unasked); }
+  .head { display: grid; grid-template-columns: auto 1fr; gap: 2px 12px; }
+  .num { font: 400 22px/1.2 "Iowan Old Style", Palatino, Georgia, serif; color: var(--muted); font-variant-numeric: tabular-nums; }
+  h3 { margin: 0; font-size: 16px; line-height: 1.35; font-weight: 600; overflow-wrap: anywhere; }
+  .tags { grid-column: 2; font-size: 12px; color: var(--muted); }
+  .tags .high { color: var(--unasked); font-weight: 600; }
+  .why { margin: 10px 0 0; } .question { margin: 6px 0 0; color: var(--muted); }
+  details { margin-top: 12px; }
+  summary { cursor: pointer; color: var(--muted); font-size: 13px; padding: 4px 0; overflow-wrap: anywhere; }
+  summary:hover { color: var(--ink); }
+  pre { margin: 6px 0 0; padding: 8px 0; background: var(--code); border-radius: 6px; font-size: 12.5px; line-height: 1.5; overflow-x: auto; }
+  pre div { display: flex; padding: 0 12px; min-width: max-content; }
+  pre span { display: inline-block; width: 4ch; flex: none; color: var(--muted); text-align: right; margin-right: 12px; user-select: none; }
+  pre code { white-space: pre; }
+  pre .plus { background: var(--unasked-soft); } pre .minus { background: var(--removed-soft); text-decoration: line-through; text-decoration-thickness: 1px; }
+  pre .dim { opacity: .55; }
+  .choice { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; align-items: center; }
+  .choice button { min-height: 36px; padding: 0 14px; border: 1px solid var(--line); border-radius: 6px; background: transparent; color: var(--ink); font: inherit; font-size: 14px; cursor: pointer; }
+  .choice button:hover { border-color: var(--muted); }
+  .choice button[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--bg); }
+  .choice button.cut[aria-pressed="true"] { background: var(--unasked); border-color: var(--unasked); color: var(--on-accent); }
+  .choice input { flex: 1 1 220px; min-height: 36px; padding: 0 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--ink); font: inherit; font-size: 14px; }
+  button:focus-visible, input:focus-visible, summary:focus-visible, a:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+  .traced { display: grid; gap: 10px; margin: 8px 0 0; padding: 0; list-style: none; font-size: 14px; }
+  .traced small { display: block; color: var(--muted); font-size: 12.5px; overflow-wrap: anywhere; }
+  footer { position: fixed; inset: auto 0 0 0; background: var(--card); border-top: 1px solid var(--line); padding: 12px 16px; }
+  footer div { max-width: 848px; margin: 0 auto; display: flex; gap: 12px; align-items: center; }
+  output { flex: 1; min-width: 0; font-size: 13px; overflow-wrap: anywhere; max-height: 66px; overflow-y: auto; }
+  output.empty { color: var(--muted); font-family: inherit; }
+  #copy { flex: none; min-height: 40px; padding: 0 16px; border: 0; border-radius: 6px; background: var(--ink); color: var(--bg); font: inherit; font-weight: 600; font-size: 14px; cursor: pointer; }
+  #copy:disabled { opacity: .4; cursor: default; }
+  @media (max-width: 620px) { .file { grid-template-columns: 1fr 44px; } .strip { grid-column: 1 / -1; grid-row: 2; } }
+</style>
+</head>
+<body>
+<main id="app"></main>
+<footer><div><output id="reply" class="empty" aria-live="polite"></output><button id="copy" type="button" disabled>Copy reply</button></div></footer>
+<script type="application/json" id="data">/*DATA*/null</script>
+<script>
+(function () {
+  var data = JSON.parse(document.getElementById('data').textContent);
+  var app = document.getElementById('app');
+  var choices = {}, notes = {}, cards = {};
+  function el(tag, attrs, kids) {
+    var node = document.createElement(tag);
+    Object.keys(attrs || {}).forEach(function (k) {
+      if (k === 'text') node.textContent = attrs[k]; else node.setAttribute(k, attrs[k]);
+    });
+    (kids || []).forEach(function (kid) { if (kid) node.appendChild(kid); });
+    return node;
+  }
+  function plural(n, word) { return n + ' ' + word + (n === 1 ? '' : 's'); }
+  var t = data.totals, total = t.asked + t.needed + t.unasked;
+
+  app.appendChild(el('p', { class: 'meta mono', text: data.branch + ' against ' + data.base + ' (' + data.baseSha + ')' }));
+  app.appendChild(el('blockquote', { class: 'ask' }, data.ask.map(function (a) { return el('p', { text: a }); })));
+  var title = el('h1');
+  title.appendChild(el('b', { text: t.unasked + ' of ' + total }));
+  title.appendChild(document.createTextNode(' changed lines weren’t asked for.'));
+  app.appendChild(title);
+
+  var bar = el('div', { class: 'bar', role: 'img', 'aria-label': t.asked + ' asked, ' + t.needed + ' needed, ' + t.unasked + ' unasked' });
+  ['asked', 'needed', 'unasked'].forEach(function (k) {
+    if (t[k]) { var seg = el('i', { class: k }); seg.style.flex = String(t[k]); bar.appendChild(seg); }
+  });
+  app.appendChild(bar);
+  var labels = { asked: 'Asked', needed: 'Needed to deliver it', unasked: 'Unasked' };
+  app.appendChild(el('ul', { class: 'legend' }, ['asked', 'needed', 'unasked'].map(function (k) {
+    var li = el('li', {}, [el('i', { class: k })]);
+    li.appendChild(document.createTextNode(labels[k] + ' '));
+    li.appendChild(el('b', { text: String(t[k]) }));
+    return li;
+  })));
+
+  app.appendChild(el('h2', { text: 'Where it landed' }));
+  var largest = Math.max.apply(null, data.files.map(function (f) { return f.total; }));
+  data.files.forEach(function (file) {
+    var strip = el('div', { class: 'strip' });
+    strip.style.width = Math.max(4, Math.round(100 * file.total / largest)) + '%';
+    file.chunks.forEach(function (chunk) {
+      var label = chunk.lines + ' ' + chunk.cls + (chunk.item ? ', item ' + chunk.item : '');
+      var part = chunk.item ? el('a', { class: chunk.cls, href: '#item-' + chunk.item, title: label, 'aria-label': label }) : el('span', { class: chunk.cls, title: label });
+      part.style.flex = String(chunk.lines);
+      strip.appendChild(part);
+    });
+    app.appendChild(el('div', { class: 'file' }, [
+      el('span', { class: 'mono', title: file.path, text: file.path }), strip, el('span', { class: 'count', text: String(file.total) })
+    ]));
+  });
+
+  var cuttable = data.items.filter(function (i) { return i.cuttable; });
+  var tools = el('div', { class: 'tools' }, [el('h2', { text: 'What you didn’t ask for' })]);
+  if (cuttable.length > 1) {
+    var all = el('button', { type: 'button', text: 'Cut everything removable' });
+    all.onclick = function () { cuttable.forEach(function (i) { choices[i.n] = 'cut'; paint(i.n); }); update(); };
+    tools.appendChild(all);
+  }
+  app.appendChild(tools);
+
+  function diff(block) {
+    var pre = el('pre');
+    block.rows.forEach(function (row) {
+      var sign = row.t.charAt(0);
+      var cls = (sign === '+' && row.on) ? 'plus' : (sign === '-' && row.on) ? 'minus' : (sign === '+' || sign === '-') ? 'dim' : '';
+      var text = (sign === '+' && !row.on) ? ' ' + row.t.slice(1) : row.t;
+      pre.appendChild(el('div', { class: cls }, [el('span', { text: row.n === null ? '' : String(row.n) }), el('code', { text: text })]));
+    });
+    return pre;
+  }
+  function paint(n) {
+    var parts = cards[n];
+    parts.buttons.forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.act === choices[n])); });
+    parts.card.className = choices[n] === 'cut' ? 'cut' : '';
+    parts.note.hidden = choices[n] !== 'change';
+  }
+  data.items.forEach(function (item) {
+    var acts = item.cuttable ? ['keep', 'cut', 'change'] : ['keep', 'change'];
+    var note = el('input', { type: 'text', placeholder: 'What should it do instead?', 'aria-label': 'Change for item ' + item.n });
+    note.hidden = true;
+    note.oninput = function () { notes[item.n] = note.value; update(); };
+    var buttons = acts.map(function (act) {
+      var b = el('button', { type: 'button', class: act, 'aria-pressed': 'false', 'data-act': act, text: act.charAt(0).toUpperCase() + act.slice(1) });
+      b.onclick = function () {
+        choices[item.n] = choices[item.n] === act ? undefined : act;
+        paint(item.n); update();
+        if (choices[item.n] === 'change') note.focus();
+      };
+      return b;
+    });
+    var opened = item.evidence.reduce(function (sum, e) { return sum + e.rows.length; }, 0) <= 12;
+    var byPath = {};
+    item.evidence.forEach(function (block) { (byPath[block.path] = byPath[block.path] || []).push(diff(block)); });
+    var proof = Object.keys(byPath).map(function (path) {
+      return el('details', opened ? { open: '' } : {}, [el('summary', { class: 'mono', text: path })].concat(byPath[path]));
+    });
+    var card = el('article', { id: 'item-' + item.n }, [
+      el('div', { class: 'head' }, [
+        el('span', { class: 'num', text: String(item.n) }),
+        el('h3', { text: item.title }),
+        el('p', { class: 'tags', style: 'margin:0' }, [
+          el('span', { class: item.impact === 'high' ? 'high' : '', text: item.impact + ' impact' }),
+          document.createTextNode(' · ' + item.kind + (item.cuttable ? ' · ' + plural(item.lines, 'line') : ' · inside requested work'))
+        ])
+      ]),
+      el('p', { class: 'why', text: item.why }),
+      item.question ? el('p', { class: 'question', text: item.question }) : null
+    ].concat(proof).concat([el('div', { class: 'choice' }, buttons.concat([note]))]));
+    cards[item.n] = { card: card, buttons: buttons, note: note };
+    app.appendChild(card);
+  });
+
+  if (data.asked.length) {
+    app.appendChild(el('details', {}, [
+      el('summary', { text: 'What counted as asked (' + (t.asked + t.needed) + ' lines). Disagree? Say so in chat.' }),
+      el('ul', { class: 'traced' }, data.asked.map(function (entry) {
+        return el('li', {}, [
+          document.createTextNode('“' + entry.quote + '”'),
+          el('small', { text: (entry.because ? entry.because + ' · ' : '') + entry.paths.join(', ') })
+        ]);
+      }))
+    ]));
+  }
+
+  var reply = document.getElementById('reply'), copy = document.getElementById('copy');
+  function line() {
+    var parts = [], pick = function (act) {
+      return data.items.filter(function (i) { return choices[i.n] === act; }).map(function (i) { return i.n; });
+    };
+    if (pick('cut').length) parts.push('cut ' + pick('cut').join(' '));
+    if (pick('keep').length) parts.push('keep ' + pick('keep').join(' '));
+    pick('change').forEach(function (n) { parts.push('change ' + n + ': ' + (notes[n] || '')); });
+    return parts.join('; ');
+  }
+  function update() {
+    var text = line();
+    reply.textContent = text || 'Choose below, copy the reply, and paste it into your session.';
+    reply.className = text ? 'mono' : 'empty';
+    copy.disabled = !text;
+    copy.textContent = 'Copy reply';
+  }
+  copy.onclick = function () {
+    var text = line();
+    function done() { copy.textContent = 'Copied'; }
+    function fallback() {
+      var area = el('textarea', { style: 'position:fixed;opacity:0' });
+      area.value = text; document.body.appendChild(area); area.select();
+      document.execCommand('copy'); area.remove(); done();
+    }
+    if (navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(text).then(done, fallback); else fallback();
+  };
+  update();
+})();
+</script>
+</body>
+</html>

@@ -2,6 +2,12 @@
 
 All notable changes to kanso are recorded here. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning follows [SemVer](https://semver.org/).
 
+## [0.7.0] — 2026-11-04
+
+### Added
+
+- `kanso-unasked`: traces every changed line to the user's own words, opens a self-contained report of what could not be traced (additions, removals, drive-bys, and silent decisions), and removes what the user rejects. Rendering fails until each line carries a verbatim quote or is named as unasked. Cuts reverse individual hunks or lines in the working tree, save an undo patch, and never rewrite history. All its files live in the git directory, so it adds nothing to the diff.
+
 ## [0.6.0] — 2026-09-03
 
 ### Added
