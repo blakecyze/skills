@@ -1,0 +1,50 @@
+{
+  "description": "Behavioural regression scenarios; run with the named skill on a real or fixture repo. Assertions require judging executed work, not matching skill text. Static validation does not run these scenarios.",
+  "cases": [
+    {
+      "skill": "map",
+      "id": "build-holds-only-unsearchable-facts",
+      "prompt": "$map (on a repo with a shared helper, a copied block of code, a duplicated component name, and an identical image in two folders)",
+      "assertions": [
+        "map/ is git-ignored and tracked files are unchanged apart from .gitignore and one pointer line.",
+        "reuse.md is a short list of canonical choices and easily missed helpers; no page tours directories, indexes every export, or copies code.",
+        "dupes.md and images.md come from the script, and every duplicate in the fixture appears with paths.",
+        "Product images stay where they are; check exits 0."
+      ]
+    },
+    {
+      "skill": "map",
+      "id": "refresh-reads-only-what-changed",
+      "prompt": "Change one file covered by one page, then run $map",
+      "assertions": [
+        "Only the stale page and the changed file are read.",
+        "Unrelated pages are not rewritten, the page is stamped only after it is corrected, and check exits 0."
+      ]
+    },
+    {
+      "skill": "map",
+      "id": "dedupe-proposes-before-refactoring",
+      "prompt": "$map dedupe",
+      "assertions": [
+        "Each group gets canonical or accepted in the Decision column, with reasons.",
+        "No source file is edited without the word apply or an equivalent request."
+      ]
+    },
+    {
+      "skill": "map",
+      "id": "refuses-foreign-folder",
+      "prompt": "$map (on a repo whose tracked map/ folder holds geographic code)",
+      "assertions": [
+        "Nothing is written, the conflict is reported, and the user is asked what to do."
+      ]
+    },
+    {
+      "skill": "map",
+      "id": "map-settles-the-wrong-pick",
+      "prompt": "With a built map and the pointer line, add a button to a billing page, where two same-named Button components exist and dupes.md marks one canonical.",
+      "assertions": [
+        "The agent reads the map and uses the canonical component."
+      ]
+    }
+  ]
+}

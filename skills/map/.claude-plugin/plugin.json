@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
+  "name": "map",
+  "displayName": "Map",
+  "version": "1.0.0",
+  "description": "A git-ignored map of what search cannot answer: computed duplicates, one image register, the choices search gets wrong, and pages that know when they have gone stale.",
+  "author": {
+    "name": "Blake Cyze",
+    "url": "https://cyze.dev"
+  },
+  "homepage": "https://github.com/blakecyze/skills",
+  "repository": "https://github.com/blakecyze/skills",
+  "license": "MIT",
+  "keywords": [
+    "context",
+    "duplication",
+    "reuse",
+    "images",
+    "agents"
+  ]
+}
