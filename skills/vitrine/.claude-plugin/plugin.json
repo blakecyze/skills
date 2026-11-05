@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
+  "name": "vitrine",
+  "displayName": "Vitrine",
+  "version": "1.0.0",
+  "description": "Audit and art-direct how work is shown: product shots, thumbnails, cards, and heroes, with measured contrast and sets that do not look the same.",
+  "author": {
+    "name": "Blake Cyze",
+    "url": "https://cyze.dev"
+  },
+  "homepage": "https://github.com/blakecyze/skills",
+  "repository": "https://github.com/blakecyze/skills",
+  "license": "MIT",
+  "keywords": [
+    "design",
+    "product-shots",
+    "thumbnails",
+    "art-direction",
+    "rendering"
+  ]
+}
