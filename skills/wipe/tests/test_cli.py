@@ -103,7 +103,45 @@ class SnapTests(unittest.TestCase):
                 code, _, _ = self.run_main("snap", "/pricing", "--measure", "--note", "b")
         self.assertEqual(code, 0)
         self.assertEqual(m.call_args[0][0], "http://x.test/pricing")
-        self.assertEqual(store.load_run(self.root, "main")["versions"][1]["measure"], {"requests": 1})
+        self.assertEqual(store.load_run(self.root, "main")["versions"][1]["measure"],
+                         {"requests": 1, "route": "/pricing"})
+
+    def test_route_without_slash_gets_one(self):
+        seen = []
+
+        def fake(url, out, viewport, theme, scale=2, method="auto", full=False):
+            seen.append(url)
+            write_png(out, 20, 10, (1, 1, 1))
+            return "chrome"
+
+        with mock.patch.object(capture, "capture", side_effect=fake):
+            code, _, _ = self.run_main("snap", "pricing", "--url", "http://localhost:59321", "--note", "a")
+        self.assertEqual(code, 0)
+        self.assertEqual(seen, ["http://localhost:59321/pricing"])
+        self.assertEqual(store.load_run(self.root, "main")["routes"], ["/pricing"])
+
+    def test_image_must_be_png(self):
+        jpg = self.root / "s.jpg"
+        jpg.write_bytes(b"\xff\xd8\xff\xe0" + b"0" * 40)
+        code, _, err = self.run_main("snap", "--image", str(jpg), "--note", "a")
+        self.assertEqual(code, 2)
+        self.assertIn("not a PNG; convert it first", err)
+        self.assertIn("sips", err)
+        self.assertEqual(store.load_run(self.root, "main")["versions"], [])
+
+    def test_bad_v0_image_does_not_traceback(self):
+        self.run_main("snap", "--image", self.png("a.png"), "--note", "a")
+        (self.root / ".wipe" / "main" / "v0" / "screen.png").write_bytes(b"not a png at all, sorry")
+        code, _, err = self.run_main("snap", "--image", self.png("b.png"), "--note", "b")
+        self.assertEqual(code, 0)
+        self.assertNotIn("Traceback", err)
+
+    def test_measure_stores_route(self):
+        with mock.patch.object(capture, "capture", side_effect=self.fake_capture), \
+                mock.patch.object(capture, "_has_playwright", return_value=True), \
+                mock.patch.object(capture, "measure", return_value={"requests": 1}):
+            self.run_main("snap", "/a", "/b", "--url", "http://x.test", "--measure", "--note", "a")
+        self.assertEqual(store.load_run(self.root, "main")["versions"][0]["measure"]["route"], "/a")
 
     def test_snap_reuses_manifest_routes(self):
         urls = []
@@ -151,7 +189,7 @@ class SnapTests(unittest.TestCase):
             code, _, _ = self.run_main("snap", "--url", "http://x.test", "--measure", "--production", "--note", "a")
         self.assertEqual(code, 0)
         self.assertEqual(store.load_run(self.root, "main")["versions"][0]["measure"],
-                         {"requests": 1, "production": True})
+                         {"requests": 1, "route": "/", "production": True})
 
     def test_measure_without_any_url_is_usage_error(self):
         with mock.patch.object(capture, "_has_playwright", return_value=True):
@@ -199,6 +237,12 @@ class HousekeepingTests(unittest.TestCase):
         os.chdir(self.root)
         self.addCleanup(os.chdir, cwd)
         self.addCleanup(self.drop_worktrees)
+        self._wt_tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self._wt_tmp.cleanup)
+        old_tempdir = tempfile.tempdir
+        tempfile.tempdir = str(Path(self._wt_tmp.name).resolve())
+        self.addCleanup(setattr, tempfile, "tempdir", old_tempdir)
+        self.tmp = Path(tempfile.tempdir)
 
     def git(self, *args):
         return subprocess.run(["git", *args], cwd=self.root, check=True, capture_output=True, text=True)
@@ -240,7 +284,7 @@ class HousekeepingTests(unittest.TestCase):
         self.assertIn("nope", err)
 
     def test_base_existing_unrecorded_path_is_usage_error(self):
-        path = Path(tempfile.gettempdir()) / "wipe-main-head-1"
+        path = Path(tempfile.gettempdir()) / f"wipe-main-head-1-{wipe.root_hash(self.root)}"
         path.mkdir()
         self.addCleanup(path.rmdir)
         code, _, err = self.run_main("base", "HEAD~1")
@@ -255,6 +299,84 @@ class HousekeepingTests(unittest.TestCase):
         self.assertEqual(code, 2)
         self.assertIn("git", err)
         self.assertNotIn("Traceback", err)
+
+    def write_manifest(self, **fields):
+        d = self.root / ".wipe" / "main"
+        d.mkdir(parents=True, exist_ok=True)
+        m = {"run": "main", "base_url": None, "viewport": None, "theme": None,
+             "routes": [], "worktrees": [], "versions": []}
+        m.update(fields)
+        (d / "manifest.json").write_text(json.dumps(m))
+
+    def test_tampered_run_field_cannot_escape(self):
+        victim = self.root.parent / (self.root.name + "-victim")
+        victim.mkdir()
+        self.addCleanup(__import__("shutil").rmtree, victim, True)
+        (victim / "keep.txt").write_text("x")
+        self.write_manifest(run="../../" + victim.name)
+        self.assertEqual(store.load_run(self.root, "main")["run"], "main")
+        self.assertEqual(self.run_main("clean", "--all")[0], 0)
+        self.assertTrue((victim / "keep.txt").is_file())
+        self.assertFalse((self.root / ".wipe" / "main").exists())
+
+    def test_clean_all_refuses_folder_outside_wipe(self):
+        victim = self.root / "victim"
+        victim.mkdir()
+        with mock.patch.object(store, "run_dir", return_value=victim):
+            code, _, err = self.run_main("clean", "--all")
+        self.assertEqual(code, 2)
+        self.assertTrue(victim.is_dir())
+
+    def test_clean_leaves_foreign_worktree_paths(self):
+        import shutil
+        foreign = Path(tempfile.mkdtemp(prefix="foreign-", dir=self.tmp))
+        outside = Path(tempfile.mkdtemp(prefix="wipe-x-", dir=self.root))
+        self.addCleanup(shutil.rmtree, outside, True)
+        self.git("worktree", "add", "--detach", str(foreign / "w"), "HEAD")
+        nested = self.tmp / "sub"
+        nested.mkdir()
+        deep = nested / "wipe-deep"
+        deep.mkdir()
+        self.write_manifest(worktrees=[str(foreign / "w"), str(outside), str(deep)])
+        code, _, err = self.run_main("clean")
+        self.assertEqual(code, 0)
+        self.assertTrue((foreign / "w").is_dir())
+        self.assertTrue(outside.is_dir())
+        self.assertTrue(deep.is_dir())
+        self.assertIn("warning:", err)
+
+    def test_base_updates_stale_worktree(self):
+        self.git("branch", "moving", "HEAD~1")
+        _, out, _ = self.run_main("base", "moving")
+        path = Path(out.strip())
+        self.git("branch", "-f", "moving", "HEAD")
+        code, out2, err2 = self.run_main("base", "moving")
+        self.assertEqual(code, 0)
+        self.assertEqual(out2.strip(), str(path))
+        self.assertIn("updated", err2)
+        head = subprocess.run(["git", "rev-parse", "HEAD"], cwd=path, capture_output=True, text=True).stdout
+        self.assertEqual(head.strip(), self.git("rev-parse", "HEAD").stdout.strip())
+
+    def test_base_fresh_worktree_not_reported_updated(self):
+        _, out, _ = self.run_main("base", "HEAD~1")
+        _, out2, err2 = self.run_main("base", "HEAD~1")
+        self.assertNotIn("updated", out2 + err2)
+
+    def test_base_paths_differ_per_project(self):
+        import os
+        _, first, _ = self.run_main("base", "HEAD")
+        with tempfile.TemporaryDirectory() as d:
+            other = Path(d).resolve()
+            subprocess.run(["git", "init", "-q", "-b", "main"], cwd=other, check=True)
+            subprocess.run(["git", "-c", "user.name=w", "-c", "user.email=w@example.invalid",
+                            "commit", "-q", "--allow-empty", "-m", "x"], cwd=other, check=True)
+            os.chdir(other)
+            code, second, err = self.run_main("base", "HEAD")
+            self.assertEqual(code, 0, err)
+            shutil_path = Path(second.strip())
+            self.assertNotEqual(first.strip(), second.strip())
+            self.assertTrue(shutil_path.name.startswith("wipe-main-"))
+            subprocess.run(["git", "worktree", "remove", "--force", str(shutil_path)], cwd=other)
 
     def test_clean_removes(self):
         _, out, _ = self.run_main("base", "HEAD~1")

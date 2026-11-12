@@ -55,6 +55,18 @@ class PageTests(unittest.TestCase):
         self.assertEqual(notes, ["note 0 <b>&", "note 1 <b>&"])
         self.assertNotIn("<b>", html)  # notes are escaped inside the JSON block
 
+    def test_note_with_placeholder_cannot_break_page(self):
+        m = store.load_run(self.root, "x")
+        img = {"/pricing": write_png(self.root / "p.png", 8, 6, (1, 2, 3))}
+        store.add_version(self.root, m, "see __COMPONENT__ and __RUN__", img, "chrome", 2)
+        store.add_version(self.root, m, "__DATA__", img, "chrome", 2)
+        store.save_run(self.root, m)
+        html = page.build_page(self.root, m).read_text()
+        data = page_data(html)
+        self.assertEqual(data["manifest"]["versions"][0]["note"], "see __COMPONENT__ and __RUN__")
+        self.assertEqual(data["manifest"]["versions"][1]["note"], "__DATA__")
+        self.assertEqual(html.count("customElements.define"), page.COMPONENT.read_text().count("customElements.define"))
+
     def test_page_inlines_component(self):
         html = page.build_page(self.root, self.make_run(2)).read_text()
         self.assertIn("customElements.define('before-after'", html)

@@ -47,7 +47,9 @@ def load_run(root: Path, run: str) -> dict:
     f = run_dir(root, run) / "manifest.json"
     if not f.exists():
         return _empty(run)
-    return json.loads(f.read_text())
+    manifest = json.loads(f.read_text())
+    manifest["run"] = run  # the folder name is the truth; a copied manifest must not steer paths elsewhere
+    return manifest
 
 
 def save_run(root: Path, manifest: dict) -> None:

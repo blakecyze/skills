@@ -28,12 +28,12 @@ Run `python3 <skill>/scripts/wipe.py <command>` from inside the project, with `<
 
 | Command | Does |
 |---|---|
-| `snap [routes] --note "<note>" --url <base>` | Captures `<base>` plus each route as the next version. With no routes, later snaps reuse the run's routes against `<base>`; only a run with no routes captures `<base>` as given, which suits a `file://` page |
-| `snap [routes] --note "<note>" --image <png>` | Saves screenshots you already took, one `--image` per route in order. With no route and none saved in the run, the capture is called `screen` |
+| `snap [routes] --note "<note>" --url <base>` | Captures `<base>` plus each route as the next version (a route without a leading `/` gets one). With no routes, later snaps reuse the run's routes against `<base>`; only a run with no routes captures `<base>` as given, which suits a `file://` page |
+| `snap [routes] --note "<note>" --image <png>` | Saves PNG screenshots you already took (convert others first, for example `sips -s format png in.jpg --out out.png` on macOS), one `--image` per route in order. With no route and none saved in the run, the capture is called `screen` |
 | `show [A B] [--route R] [--no-open]` | Writes `.wipe/<run>/index.html` comparing A and B (default: the latest two), opens it, and prints its path. Modes: wipe, side by side, onion skin, diff |
 | `clip [--versions 0,2,3] [--routes /,/pricing]` | Writes `clip.mp4` and `clip.gif` to `.wipe/<run>/` or `--out`. Also `--receipt`, `--outro "<text>"`, `--open-moving`, `--scroll`, `--no-loop`, `--ground <hex>`, `--gif-width <px>` |
 | `embed A B [--route R] [--out <dir>]` | Writes a standalone before/after snippet for docs or a portfolio |
-| `base <ref>` | Checks `<ref>` out in a temporary worktree and prints its path |
+| `base <ref>` | Checks `<ref>` out in a temporary worktree and prints its path; rerunning it moves a reused worktree to the ref's current commit |
 | `clean [--all]` | Removes the run's worktrees; `--all` also deletes its `.wipe/` folder |
 | `list` | Shows every run, its versions and notes |
 
@@ -52,7 +52,7 @@ Exit codes: 0 done, 1 runtime error (read stderr), 2 bad command (fix it and rer
 
 - Headless Chrome, the no-install method, captures the viewport only. `--full` needs Playwright; without it Wipe captures the viewport and warns, and you say so.
 - `--measure` needs Playwright and a `--url`, and measures only the first route.
-- A receipt needs the clip's first and last versions both measured on the same host, any port. Otherwise the clip renders without it and prints a `note:`.
+- A receipt needs the clip's first and last versions both measured on the same host, any port, and the clip must show the measured route. Otherwise the clip renders without it and prints a `note:`.
 - Numbers from localhost or a local file are labelled as such on the card. Never present them as production numbers; the card says `production build` only when both versions were snapped with `--production`.
 - The diff view highlights changed pixels and gives no percentage, so quote none.
 - Clips loop by default: they end by sweeping back to the first version, and a clip of several routes cuts back to the first route. `--no-loop` ends on the last version.

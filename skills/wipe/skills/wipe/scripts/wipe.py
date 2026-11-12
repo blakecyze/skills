@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import shutil
 import subprocess
 import sys
@@ -30,6 +31,17 @@ class UsageError(Exception):
 
 def warn(text):
     print(f"warning: {text}", file=sys.stderr)
+
+
+def root_hash(root) -> str:
+    """Short hash of the project's resolved path, so base worktrees of different projects never collide."""
+    return hashlib.sha1(str(Path(root).resolve()).encode()).hexdigest()[:8]
+
+
+def is_wipe_worktree(path) -> bool:
+    """True for a directory Wipe could have made: named wipe-* directly inside the temporary folder."""
+    p = Path(path)
+    return p.name.startswith("wipe-") and p.resolve().parent == Path(tempfile.gettempdir()).resolve()
 
 
 def parse_viewport(text):
@@ -106,6 +118,7 @@ def cmd_snap(args) -> int:
     root, manifest = load(args)
     run = manifest["run"]
     first = not manifest["versions"]
+    args.routes = [r if r.startswith("/") else "/" + r for r in args.routes]
     viewport = args.viewport or (tuple(manifest["viewport"]) if manifest["viewport"] else (1280, 800))
     theme_arg = args.theme or manifest["theme"] or "light"
     themes = ["light", "dark"] if theme_arg == "both" else [theme_arg]
@@ -138,6 +151,12 @@ def cmd_snap(args) -> int:
                 if not Path(img).is_file():
                     print(f"error: image not found: {img}", file=sys.stderr)
                     return 2
+                try:
+                    store.image_size(Path(img))
+                except ValueError:
+                    print(f"error: {img} is not a PNG; convert it first "
+                          "(on macOS: sips -s format png in.jpg --out out.png)", file=sys.stderr)
+                    return 2
                 images[route] = Path(img)
             method, scale = "image", 1
         else:
@@ -162,6 +181,7 @@ def cmd_snap(args) -> int:
                         images[key] = out
                 if args.measure:
                     m = capture.measure(targets[0][1], viewport)
+                    m["route"] = targets[0][0]
                     if args.production:
                         m["production"] = True
                     measures = {"measure": m}
@@ -176,8 +196,11 @@ def cmd_snap(args) -> int:
             v0 = manifest["versions"][0]["images"]
             for route, src in images.items():
                 if route in v0:
-                    old = store.image_size(store.run_dir(root, run) / v0[route])
-                    new = store.image_size(src)
+                    try:
+                        old = store.image_size(store.run_dir(root, run) / v0[route])
+                        new = store.image_size(src)
+                    except (ValueError, OSError):
+                        continue
                     if old != new:
                         warn(f"{route} is {new[0]}x{new[1]}; v0 was {old[0]}x{old[1]}.")
         store.ensure_excluded(root)
@@ -301,9 +324,10 @@ def cmd_clip(args) -> int:
         return 3
     receipt = args.receipt
     if receipt:
-        problem = clip.receipt_problem(manifest, versions)
+        problem = clip.receipt_problem(manifest, versions, routes)
         if problem:
-            print(f"note: no receipt card: {problem}", file=sys.stderr)
+            lead = "note: " if problem.startswith("the receipt measured") else "note: no receipt card: "
+            print(f"{lead}{problem}", file=sys.stderr)
             receipt = False
     out = Path(args.out) if args.out else store.run_dir(root, manifest["run"])
     try:
@@ -330,11 +354,18 @@ def cmd_base(args) -> int:
         raise UsageError("base needs a git repository; run it inside the project")
     if repo._git(root, "rev-parse", "--verify", "--quiet", f"{args.ref}^{{commit}}").returncode != 0:
         raise UsageError(f"git has no commit called {args.ref!r}")
-    path = Path(tempfile.gettempdir()) / f"wipe-{manifest['run']}-{store.slug(args.ref)}"
+    path = Path(tempfile.gettempdir()) / f"wipe-{manifest['run']}-{store.slug(args.ref)}-{root_hash(root)}"
     recorded = str(path) in manifest["worktrees"]
     if path.exists():
         if not recorded:
             raise UsageError(f"{path} already exists and Wipe did not create it; remove it or pick another ref")
+        want = repo._git(root, "rev-parse", f"{args.ref}^{{commit}}").stdout.strip()
+        have = repo._git(path, "rev-parse", "HEAD").stdout.strip()
+        if want and have != want:
+            moved = repo._git(path, "checkout", "--detach", want)
+            if moved.returncode != 0:
+                raise UsageError(f"could not update {path} to {args.ref!r}: {moved.stderr.strip()}")
+            print(f"updated {path} to {args.ref} ({want[:7]})", file=sys.stderr)
         print(path)
         return 0
     repo._git(root, "worktree", "prune")  # forget a recorded worktree that was deleted by hand
@@ -354,6 +385,9 @@ def cmd_clean(args) -> int:
     root, manifest = load(args)
     kept = []
     for wt in manifest["worktrees"]:
+        if not is_wipe_worktree(wt):
+            warn(f"left {wt} alone; Wipe only removes wipe-* folders in the temporary directory")
+            continue
         repo.remove_worktree(root, Path(wt))
         if Path(wt).exists():
             warn(f"could not remove {wt}; delete it by hand")
@@ -362,6 +396,8 @@ def cmd_clean(args) -> int:
     manifest["worktrees"] = kept
     folder = store.run_dir(root, manifest["run"])
     if args.all and not kept:
+        if folder.resolve().parent != (Path(root) / store.DIR).resolve():
+            raise UsageError(f"refusing to delete {folder}: it is not a run folder inside {store.DIR}")
         shutil.rmtree(folder, ignore_errors=True)
         print(f"removed {store.DIR}/{manifest['run']}")
     elif args.all:
