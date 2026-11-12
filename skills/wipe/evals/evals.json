@@ -1,0 +1,75 @@
+{
+  "description": "Behavioural regression scenarios; run with the named skill in a project with a dev server unless the prompt says otherwise. Assertions require judging executed work, not matching skill text. Static validation does not run these scenarios.",
+  "cases": [
+    {
+      "skill": "wipe",
+      "id": "baseline-before-first-edit",
+      "prompt": "Let's tighten up the pricing page at /pricing. Wipe as we go.",
+      "assertions": [
+        "Runs snap for /pricing with a note such as 'before' before making any edit to the code.",
+        "Snaps once after each pass, with a note describing the change in the user's terms.",
+        "Passes the same route on every snap and reports each saved version label."
+      ]
+    },
+    {
+      "skill": "wipe",
+      "id": "late-start-rebuilds-base",
+      "prompt": "I've already changed the header layout but haven't committed. Can you show me a before and after with Wipe?",
+      "assertions": [
+        "Does not snap the current, edited state as v0 or label it 'before'.",
+        "Runs base HEAD (or another ref from before the edits), starts that worktree on a free port, and snaps it as v0 with --url pointing at it.",
+        "Stops the server it started for the base and runs clean once the worktree is no longer needed.",
+        "Snaps the current state as v1 and builds the compare page with show."
+      ]
+    },
+    {
+      "skill": "wipe",
+      "id": "viewport-mismatch-reported",
+      "prompt": "Snap the dashboard at 390x844 so we can see it on mobile. (The run's earlier versions were captured at 1280x800.)",
+      "assertions": [
+        "Tells the user that the new version's viewport differs from the earlier versions and that the comparison is uneven.",
+        "Does not present a comparison across the two viewports as a like-for-like result.",
+        "Offers a fix, such as snapping at the run's viewport or starting a separate run with --run."
+      ]
+    },
+    {
+      "skill": "wipe",
+      "id": "clip-without-ffmpeg",
+      "prompt": "Make me a before/after video of the last three passes. (ffmpeg is not installed.)",
+      "assertions": [
+        "Runs clip and reads its exit code 3.",
+        "Says plainly that no video or GIF was made because ffmpeg is missing, and gives the compare page path the command printed.",
+        "Offers to install ffmpeg and does not install it without asking."
+      ]
+    },
+    {
+      "skill": "wipe",
+      "id": "localhost-receipt-labelled",
+      "prompt": "Render the clip with a receipt of the numbers so I can post it. Both versions were snapped with --measure against http://localhost:3000.",
+      "assertions": [
+        "Runs clip --receipt and reports the output paths and sizes.",
+        "Says the numbers come from a localhost dev server and does not describe them as production performance.",
+        "Relays any note: the command printed about the receipt."
+      ]
+    },
+    {
+      "skill": "wipe",
+      "id": "native-app-uses-image",
+      "prompt": "I'm iterating on the settings screen of our iOS app in the Simulator. Keep versions with Wipe as we go.",
+      "assertions": [
+        "Captures with xcrun simctl io booted screenshot (or an equivalent simulator tool) to a temporary file.",
+        "Passes that file to snap with --image and a note, instead of trying to capture a URL.",
+        "Captures the baseline before the first edit and keeps the same device and orientation for later passes."
+      ]
+    },
+    {
+      "skill": "wipe",
+      "id": "wipe-folder-never-committed",
+      "prompt": "That last pass looks good. Commit the changes.",
+      "assertions": [
+        "The commit contains no file under .wipe/.",
+        "Does not add .wipe/ to .gitignore or force-add it."
+      ]
+    }
+  ]
+}
