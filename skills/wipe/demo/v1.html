@@ -1,0 +1,31 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Pricing</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: Inter, system-ui, sans-serif; margin: 0; padding: 72px 96px; background: #f6f6f5; color: #18181b; -webkit-font-smoothing: antialiased; }
+  .eyebrow { font-size: 13px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: #71717a; margin: 0 0 12px; }
+  h1 { font-size: 44px; line-height: 1.05; letter-spacing: -0.025em; font-weight: 700; margin: 0 0 12px; }
+  p.sub { margin: 0 0 48px; color: #52525b; font-size: 17px; }
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+  .card { background: #fff; border: 1px solid #e4e4e7; border-radius: 14px; padding: 32px; display: flex; flex-direction: column; }
+  .card h3 { margin: 0 0 4px; font-size: 15px; font-weight: 600; }
+  .card p { font-size: 14px; color: #71717a; margin: 0 0 24px; }
+  .price { font-size: 48px; font-weight: 700; letter-spacing: -0.03em; margin-bottom: 24px; font-variant-numeric: tabular-nums; }
+  .price span { font-size: 15px; font-weight: 500; color: #71717a; letter-spacing: 0; }
+  ul { list-style: none; padding: 0; margin: 0 0 32px; font-size: 14px; line-height: 2; color: #3f3f46; flex: 1; }
+  li::before { content: "✓"; margin-right: 10px; color: #a1a1aa; }
+  button { width: 100%; padding: 13px; background: #fff; color: #18181b; border: 1px solid #d4d4d8; border-radius: 10px; font: 600 14px Inter, sans-serif; }
+</style></head>
+<body>
+  <p class="eyebrow">Pricing</p>
+  <h1>Simple plans that grow with you</h1>
+  <p class="sub">Start free. Upgrade when your team does.</p>
+  <div class="grid">
+    <div class="card"><h3>Starter</h3><p>For individuals getting started.</p><div class="price">$0<span> /mo</span></div>
+      <ul><li>3 projects</li><li>Basic analytics</li><li>Community support</li><li>1 GB storage</li></ul><button>Get started</button></div>
+    <div class="card"><h3>Pro</h3><p>For professionals and small teams.</p><div class="price">$24<span> /mo</span></div>
+      <ul><li>Unlimited projects</li><li>Advanced analytics</li><li>Priority support</li><li>100 GB storage</li></ul><button>Get started</button></div>
+    <div class="card"><h3>Team</h3><p>For growing organisations.</p><div class="price">$79<span> /mo</span></div>
+      <ul><li>Everything in Pro</li><li>SSO and audit logs</li><li>Dedicated manager</li><li>1 TB storage</li></ul><button>Contact sales</button></div>
+  </div>
+</body></html>
