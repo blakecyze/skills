@@ -13,12 +13,15 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import capture  # noqa: E402
+import clip  # noqa: E402
 import page  # noqa: E402
 import repo  # noqa: E402
 import store  # noqa: E402
 
 PLAYWRIGHT_HELP = ("Needs Playwright. Run: python3 -m venv <temp>/v && <temp>/v/bin/pip install playwright, "
                    "then use <temp>/v/bin/python.")
+PILLOW_HELP = ("Needs Pillow. Run: python3 -m venv <temp>/v && <temp>/v/bin/pip install pillow, "
+               "then use <temp>/v/bin/python.")
 
 
 class UsageError(Exception):
@@ -68,6 +71,21 @@ def build_parser():
     s.add_argument("--run", help="run name (default: current branch)")
     s.add_argument("--route", help="route to use (default: the first one)")
     s.add_argument("--out", help="folder to write (default: .wipe/<run>/embed-vA-vB)")
+
+    s = sub.add_parser("clip", help="render an MP4 and GIF that wipe through the versions (needs Pillow, ffmpeg)")
+    s.add_argument("--run", help="run name (default: current branch)")
+    s.add_argument("--versions", help="versions in order, such as 0,2,3 or v0,v2 (default: all)")
+    s.add_argument("--routes", help="routes to play one after another, such as /,/pricing "
+                                    "(default: the run's first route)")
+    s.add_argument("--out", help="folder for clip.mp4 and clip.gif (default: .wipe/<run>)")
+    s.add_argument("--ground", default="#0e0e0d", help="background colour (default: #0e0e0d)")
+    s.add_argument("--no-loop", action="store_true",
+                   help="end on the last version, without the sweep back to the first")
+    s.add_argument("--open-moving", action="store_true", help="start with the first wipe already moving")
+    s.add_argument("--outro", metavar="TEXT", help="end on a card showing TEXT, such as an install command")
+    s.add_argument("--receipt", action="store_true", help="add a card comparing the first and last versions' numbers")
+    s.add_argument("--scroll", action="store_true", help="pan down a capture taller than the window on its last hold")
+    s.add_argument("--gif-width", type=int, default=960, help="GIF width in pixels (default: 960)")
     return p
 
 
@@ -219,9 +237,66 @@ def cmd_embed(args) -> int:
     return 0
 
 
+def choose_clip(manifest: dict, versions_arg, routes_arg):
+    """Resolve --versions and --routes into lists, or raise UsageError."""
+    count = len(manifest["versions"])
+    if versions_arg:
+        versions = [version_index(t.strip(), count) for t in versions_arg.split(",")]
+        if len(set(versions)) != len(versions):
+            raise UsageError("--versions lists a version twice")
+    else:
+        versions = list(range(count))
+    if versions_arg and len(versions) < 2:
+        raise UsageError(f"a clip needs two versions; --versions names {len(versions)}")
+    if len(versions) < 2:
+        raise UsageError(f"a clip needs two versions; run {manifest['run']!r} has {count}. "
+                         "Save another with snap first.")
+    routes = [r.strip() for r in routes_arg.split(",")] if routes_arg else manifest["routes"][:1]
+    for route in routes:
+        if route not in manifest["routes"]:
+            raise UsageError(f"no route {route} in this run; it has {', '.join(manifest['routes'])}")
+        for v in versions:
+            if route not in manifest["versions"][v]["images"]:
+                raise UsageError(f"v{v} has no capture of {route}")
+    return versions, routes
+
+
+def cmd_clip(args) -> int:
+    root, manifest = load(args)
+    versions, routes = choose_clip(manifest, args.versions, args.routes)
+    try:
+        clip.parse_hex(args.ground)
+    except ValueError as e:
+        raise UsageError(f"--ground: {e}")
+    if args.gif_width < 16:
+        raise UsageError("--gif-width must be at least 16")
+    # ffmpeg first: without it the compare page is still useful, and needs no Pillow.
+    if not clip.find_ffmpeg():
+        path = page.build_page(root, manifest, versions[0], versions[-1], routes[0])
+        print(f"ffmpeg not found; no video was made. Compare page: {path}", file=sys.stderr)
+        return 3
+    if not clip.has_pillow():
+        print(f"error: clip {PILLOW_HELP}", file=sys.stderr)
+        return 3
+    out = Path(args.out) if args.out else store.run_dir(root, manifest["run"])
+    try:
+        made = clip.render(root, manifest, versions, routes, out, args.ground, loop=not args.no_loop,
+                           open_moving=args.open_moving, outro_text=args.outro, receipt=args.receipt,
+                           scroll=args.scroll, gif_width=args.gif_width)
+    except (clip.ClipError, OSError) as e:  # OSError: a capture missing or unreadable.
+        print(f"error: {e}", file=sys.stderr)
+        return 1
+    for path in made.values():
+        print(f"{path} ({path.stat().st_size / 1e6:.2f} MB)")
+    size = made["gif"].stat().st_size / 1e6
+    if size > 15:
+        warn(f"clip.gif is {size:.1f} MB; X takes GIFs up to 15 MB. Try a smaller --gif-width.")
+    return 0
+
+
 def main(argv=None) -> int:
     args = build_parser().parse_args(argv)
-    commands = {"snap": cmd_snap, "show": cmd_show, "embed": cmd_embed}
+    commands = {"snap": cmd_snap, "show": cmd_show, "embed": cmd_embed, "clip": cmd_clip}
     try:
         return commands[args.cmd](args)
     except UsageError as e:
