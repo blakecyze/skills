@@ -80,6 +80,14 @@ def _chrome_capture(url, out, viewport, theme, scale):
 
 
 def _playwright_capture(url, out, viewport, theme, scale, full):
+    from playwright.sync_api import Error as PlaywrightError
+    try:
+        _playwright_capture_raw(url, out, viewport, theme, scale, full)
+    except PlaywrightError as e:
+        raise CaptureError(f"Playwright failed for {url}: {str(e).strip().splitlines()[0]}")
+
+
+def _playwright_capture_raw(url, out, viewport, theme, scale, full):
     from playwright.sync_api import sync_playwright
     out = Path(out)
     out.parent.mkdir(parents=True, exist_ok=True)
@@ -114,6 +122,14 @@ def capture(url: str, out: Path, viewport, theme, scale=2, method="auto", full=F
 
 def measure(url: str, viewport, runs=3) -> dict:
     """Median transfer size, requests, DOM nodes and LCP over several loads. Needs Playwright."""
+    from playwright.sync_api import Error as PlaywrightError
+    try:
+        return _measure_raw(url, viewport, runs)
+    except PlaywrightError as e:
+        raise CaptureError(f"Playwright failed for {url}: {str(e).strip().splitlines()[0]}")
+
+
+def _measure_raw(url, viewport, runs):
     from playwright.sync_api import sync_playwright
     script = """async () => {
       const lcp = await new Promise(res => {
