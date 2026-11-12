@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.1
+
+- Draw clip labels and the version strip about 1.6 times larger, so they stay readable when a clip plays at phone width.
+
 ## 1.0.0
 
 - Save each UI pass as a numbered version, captured with headless Chrome, Playwright, or screenshots you supply.
