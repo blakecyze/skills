@@ -86,6 +86,16 @@ def build_parser():
     s.add_argument("--receipt", action="store_true", help="add a card comparing the first and last versions' numbers")
     s.add_argument("--scroll", action="store_true", help="pan down a capture taller than the window on its last hold")
     s.add_argument("--gif-width", type=int, default=960, help="GIF width in pixels (default: 960)")
+
+    s = sub.add_parser("base", help="rebuild an old git ref in a temporary worktree and print its path")
+    s.add_argument("ref", help="branch, tag or commit, such as HEAD~1 or main")
+    s.add_argument("--run", help="run name (default: current branch)")
+
+    s = sub.add_parser("clean", help="remove the run's temporary worktrees")
+    s.add_argument("--run", help="run name (default: current branch)")
+    s.add_argument("--all", action="store_true", help="also delete the run's folder under .wipe")
+
+    sub.add_parser("list", help="show every run, its versions and notes")
     return p
 
 
@@ -303,9 +313,73 @@ def cmd_clip(args) -> int:
     return 0
 
 
+def cmd_base(args) -> int:
+    root, manifest = load(args)
+    if not repo.is_git(root):
+        raise UsageError("base needs a git repository; run it inside the project")
+    if repo._git(root, "rev-parse", "--verify", "--quiet", f"{args.ref}^{{commit}}").returncode != 0:
+        raise UsageError(f"git has no commit called {args.ref!r}")
+    path = Path(tempfile.gettempdir()) / f"wipe-{manifest['run']}-{store.slug(args.ref)}"
+    recorded = str(path) in manifest["worktrees"]
+    if path.exists():
+        if not recorded:
+            raise UsageError(f"{path} already exists and Wipe did not create it; remove it or pick another ref")
+        print(path)
+        return 0
+    repo._git(root, "worktree", "prune")  # forget a recorded worktree that was deleted by hand
+    try:
+        repo.add_worktree(root, args.ref, path)
+    except RuntimeError as e:
+        raise UsageError(f"could not check out {args.ref!r}: {e}")
+    if not recorded:
+        manifest["worktrees"].append(str(path))
+    store.ensure_excluded(root)
+    store.save_run(root, manifest)
+    print(path)
+    return 0
+
+
+def cmd_clean(args) -> int:
+    root, manifest = load(args)
+    kept = []
+    for wt in manifest["worktrees"]:
+        repo.remove_worktree(root, Path(wt))
+        if Path(wt).exists():
+            warn(f"could not remove {wt}; delete it by hand")
+            kept.append(wt)
+    repo._git(root, "worktree", "prune")
+    manifest["worktrees"] = kept
+    folder = store.run_dir(root, manifest["run"])
+    if args.all and not kept:
+        shutil.rmtree(folder, ignore_errors=True)
+        print(f"removed {store.DIR}/{manifest['run']}")
+    elif args.all:
+        warn(f"kept {store.DIR}/{manifest['run']} because a worktree is still there")
+        store.save_run(root, manifest)
+    elif folder.is_dir():
+        store.save_run(root, manifest)
+    return 0
+
+
+def cmd_list(args) -> int:
+    root = repo.find_root(Path.cwd())
+    base = Path(root) / store.DIR
+    runs = sorted(d.name for d in base.iterdir() if (d / "manifest.json").is_file()) if base.is_dir() else []
+    if not runs:
+        print("no runs yet")
+        return 0
+    for name in runs:
+        versions = store.load_run(root, name)["versions"]
+        print(f"{name}  {len(versions)} version{'' if len(versions) == 1 else 's'}")
+        for v in versions:
+            print(f"  {v['label']}  {v['note']}")
+    return 0
+
+
 def main(argv=None) -> int:
     args = build_parser().parse_args(argv)
-    commands = {"snap": cmd_snap, "show": cmd_show, "embed": cmd_embed, "clip": cmd_clip}
+    commands = {"snap": cmd_snap, "show": cmd_show, "embed": cmd_embed, "clip": cmd_clip,
+                "base": cmd_base, "clean": cmd_clean, "list": cmd_list}
     try:
         return commands[args.cmd](args)
     except UsageError as e:
