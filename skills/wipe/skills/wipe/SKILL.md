@@ -18,7 +18,7 @@ All optional. `snap` saves the current UI as the next version with the note. `sh
 
 - **Baseline first.** When the user starts iterating with Wipe, snap v0 with the note `before` before the first edit. If edits already happened with no v0, the current state is not "before". Rebuild the pre-edit code instead: `base HEAD` when the edits are uncommitted, or the commit before the work (`base main`, `base HEAD~1`) when they are committed. Install and start that copy on a free port, snap it as v0 with `--url` pointing at it, stop that server, then snap the current state as v1 with `--url` back on the project's server.
 - **One version per pass.** After each pass that changes what the user sees, snap once. Write the note in the user's terms ("tightened card spacing"), never as a diff summary. Skip broken in-between states.
-- **Same conditions.** The first snap fixes the viewport and theme, and later snaps reuse them and the last `--url`. Routes are not remembered, so pass the same routes every time. Keep data, sign-in state, and scroll position the same too; Wipe cannot check those. If snap prints a `warning:`, tell the user the comparison is uneven and why, then fix it, usually by snapping again with matching settings.
+- **Same conditions.** The first snap of a run fixes the viewport, theme, and routes. Later snaps reuse them and the last `--url`, so repeat none of them. Keep data, sign-in state, and scroll position the same too; Wipe cannot check those. If snap prints a `warning:`, tell the user the comparison is uneven and why, then fix it, usually by snapping again with matching settings.
 - **Native apps.** Take the screenshot with the platform's own tool and pass the file with `--image`: `xcrun simctl io booted screenshot <temp>/s.png` for the iOS Simulator, `adb exec-out screencap -p > <temp>/s.png` for an Android emulator, or your own simulator tool. Use the same device and orientation every pass.
 - **Clean up.** Stop every server you started. Run `clean` once a `base` worktree is no longer needed. `.wipe/` is kept out of git through `.git/info/exclude`: never stage or commit it, and never edit `.gitignore` for it.
 
@@ -37,7 +37,7 @@ Run `python3 <skill>/scripts/wipe.py <command>` from inside the project, with `<
 | `clean [--all]` | Removes the run's worktrees; `--all` also deletes its `.wipe/` folder |
 | `list` | Shows every run, its versions and notes |
 
-More `snap` flags: `--viewport 1280x800` (the default), `--theme light|dark|both`, `--full` and `--measure` (both need Playwright), `--method auto|playwright|chrome`.
+More `snap` flags: `--viewport 1280x800` (the default), `--theme light|dark|both`, `--full` and `--measure` (both need Playwright), `--production` (with `--measure`, only when the user says the URL is a production build), `--method auto|playwright|chrome`.
 
 Exit codes: 0 done, 1 runtime error (read stderr), 2 bad command (fix it and rerun), 3 missing optional dependency. On 3, tell the user what was not made and why, pass on the install line from the error, and offer to install into a temporary venv. Never install anything globally without asking.
 
@@ -52,8 +52,8 @@ Exit codes: 0 done, 1 runtime error (read stderr), 2 bad command (fix it and rer
 
 - Headless Chrome, the no-install method, captures the viewport only. `--full` needs Playwright; without it Wipe captures the viewport and warns, and you say so.
 - `--measure` needs Playwright and a `--url`, and measures only the first route.
-- A receipt needs the clip's first and last versions both measured on the same host, port included. Otherwise the clip renders without it and prints a `note:`. For a rebuilt base, serve it on the port the current version uses.
-- Numbers from localhost or a local file are labelled as such on the card. Never present them as production numbers; those need a production build on its real host.
+- A receipt needs the clip's first and last versions both measured on the same host, any port. Otherwise the clip renders without it and prints a `note:`.
+- Numbers from localhost or a local file are labelled as such on the card. Never present them as production numbers; the card says `production build` only when both versions were snapped with `--production`.
 - The diff view highlights changed pixels and gives no percentage, so quote none.
 - Clips loop by default: they end by sweeping back to the first version, and a clip of several routes cuts back to the first route. `--no-loop` ends on the last version.
 - `clip` without ffmpeg builds the compare page instead and exits 3; without Pillow it exits 3.

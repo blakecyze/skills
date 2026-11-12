@@ -52,10 +52,13 @@ def build_parser():
     s.add_argument("--url", help="base URL; saved and reused by later snaps")
     s.add_argument("--image", action="append", default=[], help="use an existing PNG instead of capturing")
     s.add_argument("--run", help="run name (default: current branch)")
-    s.add_argument("--viewport", type=parse_viewport, help="WxH, default 1280x800")
+    s.add_argument("--viewport", type=parse_viewport, default=None,
+                   help="WxH, default 1280x800 (later snaps reuse the first snap's)")
     s.add_argument("--theme", choices=["light", "dark", "both"], help="default light")
     s.add_argument("--full", action="store_true", help="full-page capture (needs Playwright)")
     s.add_argument("--measure", action="store_true", help="record load metrics (needs Playwright)")
+    s.add_argument("--production", action="store_true",
+                   help="with --measure: the URL is a production build (stored for the receipt)")
     s.add_argument("--method", choices=["auto", "playwright", "chrome"], default="auto")
 
     s = sub.add_parser("show", help="build the compare page and open it")
@@ -107,6 +110,9 @@ def cmd_snap(args) -> int:
     theme_arg = args.theme or manifest["theme"] or "light"
     themes = ["light", "dark"] if theme_arg == "both" else [theme_arg]
 
+    if args.production and not args.measure:
+        print("error: --production goes with --measure", file=sys.stderr)
+        return 2
     if args.measure and not capture._has_playwright():
         print(f"error: --measure {PLAYWRIGHT_HELP}", file=sys.stderr)
         return 3
@@ -122,7 +128,8 @@ def cmd_snap(args) -> int:
     with tempfile.TemporaryDirectory(prefix="wipe-snap-") as tmp:
         tmp = Path(tmp)
         if args.image:
-            routes = args.routes or ["screen"]
+            saved = [r for r in manifest["routes"] if not r.endswith("@dark")]
+            routes = args.routes or (saved if saved and len(saved) == len(args.image) else ["screen"])
             if len(args.image) != len(routes):
                 print(f"error: {len(args.image)} --image file(s) for {len(routes)} route(s); "
                       "pass one image per route, in order", file=sys.stderr)
@@ -138,10 +145,11 @@ def cmd_snap(args) -> int:
                 print("error: give --url or --image", file=sys.stderr)
                 return 2
             scale = 2
-            routes = args.routes or ["/"]
+            routes = args.routes or [r for r in manifest["routes"] if not r.endswith("@dark")] or ["/"]
+            bare = routes == ["/"] and not args.routes  # one page at the URL as given, such as a file:// page
             targets = []
             for route in routes:
-                url = base_url if not args.routes else base_url.rstrip("/") + route
+                url = base_url if bare else base_url.rstrip("/") + route
                 targets.append((route, url))
             used = set()
             try:
@@ -153,7 +161,10 @@ def cmd_snap(args) -> int:
                                                  method=args.method, full=args.full))
                         images[key] = out
                 if args.measure:
-                    measures = {"measure": capture.measure(targets[0][1], viewport)}
+                    m = capture.measure(targets[0][1], viewport)
+                    if args.production:
+                        m["production"] = True
+                    measures = {"measure": m}
             except capture.CaptureError as e:
                 print(f"error: {e}", file=sys.stderr)
                 return 1

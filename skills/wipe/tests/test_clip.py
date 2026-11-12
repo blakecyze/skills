@@ -125,6 +125,20 @@ class ReceiptTests(unittest.TestCase):
         problem = clip.receipt_problem(self.manifest(self.A, dict(self.A, host="example.com")), [0, 2])
         self.assertEqual(problem, "versions were measured on different hosts")
 
+    def test_receipt_ignores_port(self):
+        other = dict(self.A, host="localhost:5173")
+        self.assertIsNone(clip.receipt_problem(self.manifest(self.A, other), [0, 2]))
+        far = dict(self.A, host="example.com")
+        self.assertEqual(clip.receipt_problem(self.manifest(self.A, far), [0, 2]),
+                         "versions were measured on different hosts")
+        self.assertIsNone(clip.receipt_problem(self.manifest(far, dict(far, host="example.com:8443")), [0, 2]))
+
+    def test_receipt_footer_production(self):
+        self.assertEqual(clip.receipt_footer("example.com", True), "example.com · production build")
+        self.assertEqual(clip.receipt_footer("localhost:3000", True), "localhost:3000 · production build")
+        self.assertEqual(clip.receipt_footer("localhost:3000", False), "localhost:3000 · dev server")
+        self.assertEqual(clip.receipt_footer("example.com", False), "example.com")
+
     def test_receipt_dev_label(self):
         self.assertIn("dev server", clip.receipt_footer("localhost:3000"))
         self.assertIn("dev server", clip.receipt_footer("127.0.0.1:8080"))

@@ -315,13 +315,20 @@ def receipt_problem(manifest: dict, versions: list) -> str | None:
         if not manifest["versions"][v].get("measure"):
             return f"v{v} has no measurements; snap it with --measure to get a receipt"
     first, last = (manifest["versions"][v]["measure"] for v in ends)
-    if first.get("host") != last.get("host"):
+    if _hostname(first.get("host")) != _hostname(last.get("host")):
         return "versions were measured on different hosts"
     return None
 
 
-def receipt_footer(host: str) -> str:
-    name = host.rsplit(":", 1)[0] if re.search(r":\d+$", host) else host
+def _hostname(host) -> str:
+    host = host or ""
+    return host.rsplit(":", 1)[0] if re.search(r":\d+$", host) else host
+
+
+def receipt_footer(host: str, production: bool = False) -> str:
+    name = _hostname(host)
+    if production:
+        return f"{host} · production build"
     dev = name in ("localhost", "127.0.0.1") or name.endswith(".local")
     return f"{host} · dev server" if dev else host
 
@@ -467,7 +474,7 @@ def render(root, manifest: dict, versions: list, routes: list, out_dir: Path, gr
     card = None
     if receipt:
         first, last = (manifest["versions"][v]["measure"] for v in (versions[0], versions[-1]))
-        card = (receipt_rows(first, last), receipt_footer(first.get("host") or ""))
+        card = (receipt_rows(first, last), receipt_footer(first.get("host") or "", bool(first.get("production") and last.get("production"))))
     fps = FPS
     frames = plan_frames(versions, routes, fps=fps, loop=loop, open_moving=open_moving,
                          outro=outro_text is not None, receipt=receipt, scroll_routes=tall)
