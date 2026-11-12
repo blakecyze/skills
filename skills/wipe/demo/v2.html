@@ -1,0 +1,45 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Pricing</title>
+<style>
+  * { box-sizing: border-box; }
+  :root { --ink: #17140f; --paper: #f4efe6; --accent: #ff5a1f; --muted: #7a7266; }
+  body { font-family: Inter, system-ui, sans-serif; margin: 0; padding: 64px 96px; background: var(--paper); color: var(--ink); -webkit-font-smoothing: antialiased; }
+  header { display: flex; justify-content: space-between; align-items: end; margin-bottom: 44px; }
+  .eyebrow { font-size: 13px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); margin: 0 0 12px; }
+  h1 { font-size: 46px; line-height: 1.02; letter-spacing: -0.03em; font-weight: 800; margin: 0 0 12px; max-width: 560px; }
+  p.sub { margin: 0; color: var(--muted); font-size: 17px; }
+  .toggle { display: flex; background: #e8e0d3; border-radius: 999px; padding: 4px; font-size: 13px; font-weight: 600; }
+  .toggle span { padding: 8px 16px; border-radius: 999px; color: var(--muted); }
+  .toggle .on { background: #fff; color: var(--ink); box-shadow: 0 1px 2px rgba(23,20,15,.12); }
+  .toggle em { font-style: normal; color: var(--accent); margin-left: 6px; }
+  .grid { display: grid; grid-template-columns: 1fr 1.08fr 1fr; gap: 20px; align-items: center; }
+  .card { background: #fffdf9; border-radius: 20px; padding: 32px; display: flex; flex-direction: column; box-shadow: 0 1px 0 rgba(23,20,15,.06), 0 12px 32px -16px rgba(23,20,15,.18); }
+  .card.hero { background: var(--ink); color: #f4efe6; padding: 40px 34px; box-shadow: 0 30px 60px -24px rgba(23,20,15,.55); position: relative; }
+  .badge { position: absolute; top: 22px; right: 22px; background: var(--accent); color: #fff; font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; padding: 6px 10px; border-radius: 999px; }
+  .card h3 { margin: 0 0 4px; font-size: 15px; font-weight: 700; }
+  .card p { font-size: 14px; color: var(--muted); margin: 0 0 22px; }
+  .hero p { color: #b5ab9c; }
+  .price { font-size: 52px; font-weight: 800; letter-spacing: -0.04em; margin-bottom: 22px; font-variant-numeric: tabular-nums; }
+  .price span { font-size: 15px; font-weight: 500; color: var(--muted); letter-spacing: 0; }
+  .hero .price span { color: #b5ab9c; }
+  ul { list-style: none; padding: 0; margin: 0 0 30px; font-size: 14px; line-height: 2.05; }
+  li::before { content: "●"; font-size: 8px; vertical-align: 2px; margin-right: 12px; color: var(--accent); }
+  button { width: 100%; padding: 14px; background: transparent; color: var(--ink); border: 1.5px solid var(--ink); border-radius: 12px; font: 700 14px Inter, sans-serif; }
+  .hero button { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .foot { margin-top: 28px; font-size: 13px; color: var(--muted); text-align: center; }
+</style></head>
+<body>
+  <header>
+    <div><p class="eyebrow">Pricing</p><h1>Simple plans that grow with you</h1><p class="sub">Start free. Upgrade when your team does.</p></div>
+    <div class="toggle"><span>Monthly</span><span class="on">Yearly<em>−20%</em></span></div>
+  </header>
+  <div class="grid">
+    <div class="card"><h3>Starter</h3><p>For individuals getting started.</p><div class="price">$0<span> /mo</span></div>
+      <ul><li>3 projects</li><li>Basic analytics</li><li>Community support</li><li>1 GB storage</li></ul><button>Get started</button></div>
+    <div class="card hero"><span class="badge">Most popular</span><h3>Pro</h3><p>For professionals and small teams.</p><div class="price">$19<span> /mo</span></div>
+      <ul><li>Unlimited projects</li><li>Advanced analytics</li><li>Priority support</li><li>100 GB storage</li></ul><button>Start 14-day trial</button></div>
+    <div class="card"><h3>Team</h3><p>For growing organisations.</p><div class="price">$63<span> /mo</span></div>
+      <ul><li>Everything in Pro</li><li>SSO and audit logs</li><li>Dedicated manager</li><li>1 TB storage</li></ul><button>Contact sales</button></div>
+  </div>
+  <p class="foot">Billed yearly. Cancel anytime.</p>
+</body></html>
