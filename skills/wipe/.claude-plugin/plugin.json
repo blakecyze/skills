@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
+  "name": "wipe",
+  "displayName": "Wipe",
+  "version": "1.0.0",
+  "description": "Keep every UI pass as a version, compare any two on a slider page, and render a before/after clip from the same captures.",
+  "author": {
+    "name": "Blake Cyze",
+    "url": "https://cyze.dev"
+  },
+  "homepage": "https://github.com/blakecyze/skills",
+  "repository": "https://github.com/blakecyze/skills",
+  "license": "MIT",
+  "keywords": [
+    "design",
+    "before-after",
+    "iteration",
+    "screenshots",
+    "video"
+  ]
+}
