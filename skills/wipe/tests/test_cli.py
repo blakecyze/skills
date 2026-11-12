@@ -27,7 +27,7 @@ class SnapTests(support.TempProject):
         m = store.load_run(self.root, "main")
         self.assertEqual([v["label"] for v in m["versions"]], ["v0", "v1"])
         self.assertEqual(m["versions"][0]["method"], "image")
-        self.assertEqual(m["routes"], ["screen"])
+        self.assertEqual(m["routes"], ["/"])
         self.assertEqual(m["viewport"], [1280, 800])
         exclude = (self.root / ".git" / "info" / "exclude").read_text()
         self.assertIn("/.wipe/", exclude.splitlines())
@@ -117,10 +117,37 @@ class SnapTests(support.TempProject):
 
     def test_bad_v0_image_does_not_traceback(self):
         self.run_main("snap", "--image", self.png("a.png"), "--note", "a")
-        (self.root / ".wipe" / "main" / "v0" / "screen.png").write_bytes(b"not a png at all, sorry")
+        (self.root / ".wipe" / "main" / "v0" / "index.png").write_bytes(b"not a png at all, sorry")
         code, _, err = self.run_main("snap", "--image", self.png("b.png"), "--note", "b")
         self.assertEqual(code, 0)
         self.assertNotIn("Traceback", err)
+
+    def test_measure_rejects_image(self):
+        with mock.patch.object(capture, "_has_playwright", return_value=True):
+            code, _, err = self.run_main("snap", "--image", self.png("a.png"), "--url", "http://x.test",
+                                         "--measure", "--note", "a")
+        self.assertEqual(code, 2)
+        self.assertIn("--image", err)
+        self.assertEqual(store.load_run(self.root, "main")["versions"], [])
+
+    def test_image_run_then_url_snap_captures_the_url(self):
+        self.run_main("snap", "--image", self.png("a.png"), "--note", "a")
+        seen = []
+
+        def cap(url, out, *a, **k):
+            seen.append(url)
+            return self.fake_capture(url, out, *a, **k)
+
+        with mock.patch.object(capture, "capture", side_effect=cap):
+            code, _, _ = self.run_main("snap", "--url", "http://x.test/app", "--note", "b")
+        self.assertEqual((code, seen), (0, ["http://x.test/app"]))
+
+    def test_truncated_png_is_rejected(self):
+        short = self.root / "short.png"
+        short.write_bytes(b"\x89PNG\r\n\x1a\n\x00\x00\x00\x0dIHDR\x00\x01")
+        code, _, err = self.run_main("snap", "--image", str(short), "--note", "a")
+        self.assertEqual(code, 2)
+        self.assertIn("not a PNG", err)
 
     def test_measure_stores_route(self):
         with mock.patch.object(capture, "capture", side_effect=self.fake_capture), \
@@ -318,6 +345,20 @@ class HousekeepingTests(support.TempProject):
         self.assertTrue(outside.is_dir())
         self.assertTrue(deep.is_dir())
         self.assertIn("warning:", err)
+
+    def test_clean_keeps_record_of_worktrees_it_left(self):
+        outside = Path(tempfile.mkdtemp(prefix="wipe-x-", dir=self.root))
+        self.write_manifest(worktrees=[str(outside)])
+        self.assertEqual(self.run_main("clean", "--all")[0], 0)
+        self.assertEqual(store.load_run(self.root, "main")["worktrees"], [str(outside)])
+
+    def test_clean_all_reports_a_failed_delete(self):
+        self.snap("a")
+        with mock.patch.object(wipe.shutil, "rmtree", side_effect=PermissionError("denied")):
+            code, out, err = self.run_main("clean", "--all")
+        self.assertEqual(code, 1)
+        self.assertNotIn("removed", out)
+        self.assertIn("denied", err)
 
     def test_base_updates_stale_worktree(self):
         self.git("branch", "moving", "HEAD~1")

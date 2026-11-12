@@ -256,6 +256,12 @@ class ClipCliTests(support.TempProject):
         stub.chmod(0o755)
         return mock.patch.dict(os.environ, {"PATH": str(bin_dir)})
 
+    def test_clip_routes_without_slash(self):
+        self.make_run(2, routes=("/pricing",))
+        with mock.patch.dict(os.environ, {"PATH": str(self.root)}):  # No ffmpeg: stops at the page.
+            code, _, err = self.run_main("clip", "--run", "x", "--routes", "pricing")
+        self.assertEqual(code, 3, err)
+
     def assert_failed_cleanly(self, code, err):
         self.assertEqual(code, 1)
         self.assertIn("error:", err)
@@ -273,6 +279,19 @@ class ClipCliTests(support.TempProject):
             code, _, err = self.run_main("clip", "--run", "x")
         self.assert_failed_cleanly(code, err)
         self.assertIn("ffmpeg failed making clip.mp4", err)
+
+    @unittest.skipUnless(HAS_PIL, "needs Pillow")
+    def test_failed_render_keeps_the_previous_clip(self):
+        self.make_run(2)
+        run = store.run_dir(self.root, "x")
+        for name in ("clip.mp4", "clip.gif"):
+            (run / name).write_text("old")
+        with self.stub_ffmpeg('for a; do last="$a"; done; echo partial > "$last"; exit 1'), \
+                mock.patch.object(clip, "FPS", 2):
+            code, _, _ = self.run_main("clip", "--run", "x")
+        self.assertEqual(code, 1)
+        self.assertEqual([(run / n).read_text() for n in ("clip.mp4", "clip.gif")], ["old", "old"])
+        self.assertEqual(sorted(p.name for p in run.iterdir() if "clip" in p.name), ["clip.gif", "clip.mp4"])
 
     @unittest.skipUnless(HAS_PIL, "needs Pillow")
     def test_compose_failure_kills_ffmpeg(self):

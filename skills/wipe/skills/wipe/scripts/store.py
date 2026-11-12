@@ -123,6 +123,6 @@ def image_size(path: Path) -> tuple:
     """Width and height from the PNG IHDR chunk."""
     with open(path, "rb") as f:
         head = f.read(24)
-    if head[:8] != b"\x89PNG\r\n\x1a\n" or head[12:16] != b"IHDR":
+    if len(head) < 24 or head[:8] != b"\x89PNG\r\n\x1a\n" or head[12:16] != b"IHDR":
         raise ValueError(f"Not a PNG: {path}")
     return struct.unpack(">II", head[16:24])

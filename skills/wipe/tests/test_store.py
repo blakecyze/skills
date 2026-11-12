@@ -102,6 +102,9 @@ class StoreTests(unittest.TestCase):
     def test_image_size(self):
         p = write_png(self.root / "p.png", 31, 17, (9, 9, 9))
         self.assertEqual(store.image_size(p), (31, 17))
+        p.write_bytes(p.read_bytes()[:20])
+        with self.assertRaises(ValueError):
+            store.image_size(p)
 
     def test_git_info_and_worktree(self):
         self.init_git()
@@ -113,6 +116,9 @@ class StoreTests(unittest.TestCase):
         info = repo.git_info(self.root)
         self.assertTrue(info["sha"])
         self.assertFalse(info["dirty"])
+        (self.root / "new.html").write_text("untracked")
+        self.assertTrue(repo.git_info(self.root)["dirty"])
+        (self.root / "new.html").unlink()
         (self.root / "f.txt").write_text("y")
         self.assertTrue(repo.git_info(self.root)["dirty"])
         wt = self.root.parent / (self.root.name + "-wt")

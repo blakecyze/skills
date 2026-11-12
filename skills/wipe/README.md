@@ -46,7 +46,7 @@ Headless Chrome captures the viewport only. Full-page capture needs Playwright, 
 
 Versions compare fairly only under the same conditions. Wipe checks viewport, theme, and routes, and warns when they differ. It cannot check data, sign-in state, or scroll position, so keep those the same yourself.
 
-A receipt needs the first and last versions both measured on the same host and route. The card names the route and the host of the last version, and labels numbers from localhost or a local file as a dev server. If the clip does not show the measured route, the card is left out with a note. The card says `production build` only when both versions were snapped with `--production`.
+A receipt needs the first and last versions both measured on the same host and route. The card names the route and the host of the last version, labels numbers from localhost as a dev server, and labels a `file://` page as a local file. If the clip does not show the measured route, the card is left out with a note. The card says `production build` only when both versions were snapped with `--production`.
 
 The diff mode highlights changed pixels and gives no percentage. Wipe is not visual regression testing: it sets no thresholds and passes or fails nothing. Litmus owns QA.
 
