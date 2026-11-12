@@ -39,7 +39,7 @@ def git_info(root: Path) -> dict:
     sha = _git(root, "rev-parse", "--short", "HEAD")
     if sha.returncode != 0:
         return {"sha": None, "dirty": False}
-    status = _git(root, "status", "--porcelain", "--untracked-files=no")
+    status = _git(root, "status", "--porcelain")  # untracked counts: a new page is not in the commit
     return {"sha": sha.stdout.strip(), "dirty": bool(status.stdout.strip())}
 
 

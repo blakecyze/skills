@@ -496,14 +496,18 @@ def render(root, manifest: dict, versions: list, routes: list, out_dir: Path, gr
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     mp4, gif = out_dir / "clip.mp4", out_dir / "clip.gif"
+    # Render beside the outputs and swap in only when both succeed: a failure never leaves a truncated
+    # clip that looks finished, and never costs the previous good one.
+    new_mp4, new_gif = out_dir / ".clip-new.mp4", out_dir / ".clip-new.gif"
     try:
         _ffmpeg(["-f", "rawvideo", "-pix_fmt", "rgb24", "-s", f"{layout.w}x{layout.h}", "-r", str(FPS),
                  "-i", "-", "-c:v", "libx264", "-pix_fmt", "yuv420p", "-crf", "16", "-preset", "slow",
-                 "-movflags", "+faststart", str(mp4)], mp4.name,
+                 "-movflags", "+faststart", str(new_mp4)], mp4.name,
                 feed=_frame_bytes(frames, shots, layout, fonts, notes, outro_text, card))
-        _ffmpeg(["-i", str(mp4), "-vf", GIF_FILTER.format(w=gif_width), "-loop", "0", str(gif)], gif.name)
-    except BaseException:
-        for f in (mp4, gif):  # Never leave a truncated clip that looks finished.
+        _ffmpeg(["-i", str(new_mp4), "-vf", GIF_FILTER.format(w=gif_width), "-loop", "0", str(new_gif)], gif.name)
+        new_mp4.replace(mp4)
+        new_gif.replace(gif)
+    finally:
+        for f in (new_mp4, new_gif):
             f.unlink(missing_ok=True)
-        raise
     return {"mp4": mp4, "gif": gif}

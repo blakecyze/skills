@@ -44,6 +44,10 @@ def is_wipe_worktree(path) -> bool:
     return p.name.startswith("wipe-") and p.resolve().parent == Path(tempfile.gettempdir()).resolve()
 
 
+def as_route(text: str) -> str:
+    return text if text.startswith("/") else "/" + text
+
+
 def parse_viewport(text):
     try:
         w, h = text.lower().split("x")
@@ -118,13 +122,16 @@ def cmd_snap(args) -> int:
     root, manifest = load(args)
     run = manifest["run"]
     first = not manifest["versions"]
-    args.routes = [r if r.startswith("/") else "/" + r for r in args.routes]
+    args.routes = [as_route(r) for r in args.routes]
     viewport = args.viewport or (tuple(manifest["viewport"]) if manifest["viewport"] else (1280, 800))
     theme_arg = args.theme or manifest["theme"] or "light"
     themes = ["light", "dark"] if theme_arg == "both" else [theme_arg]
 
     if args.production and not args.measure:
         print("error: --production goes with --measure", file=sys.stderr)
+        return 2
+    if args.measure and args.image:
+        print("error: --measure loads the page in a browser, so it can't go with --image", file=sys.stderr)
         return 2
     if args.measure and not capture._has_playwright():
         print(f"error: --measure {PLAYWRIGHT_HELP}", file=sys.stderr)
@@ -142,7 +149,7 @@ def cmd_snap(args) -> int:
         tmp = Path(tmp)
         if args.image:
             saved = [r for r in manifest["routes"] if not r.endswith("@dark")]
-            routes = args.routes or (saved if saved and len(saved) == len(args.image) else ["screen"])
+            routes = args.routes or (saved if saved and len(saved) == len(args.image) else ["/"])
             if len(args.image) != len(routes):
                 print(f"error: {len(args.image)} --image file(s) for {len(routes)} route(s); "
                       "pass one image per route, in order", file=sys.stderr)
@@ -221,7 +228,7 @@ def load(args):
 def version_index(text: str, count: int) -> int:
     t = text.lower()
     t = t[1:] if t.startswith("v") else t
-    if not t.isdigit():
+    if not (t.isascii() and t.isdigit()):
         raise UsageError(f"a version is a number such as 2 or v2, not {text!r}")
     if int(t) >= count:
         raise UsageError(f"there is no v{int(t)}; this run has v0 to v{count - 1}")
@@ -242,9 +249,8 @@ def choose(manifest: dict, a, b, route):
         a, b = version_index(a, len(versions)), version_index(b, len(versions))
     if a == b:
         raise UsageError("pick two different versions")
-    if route is None:
-        route = page.default_route(manifest, b)
-    elif route not in manifest["routes"]:
+    route = page.default_route(manifest, b) if route is None else as_route(route)
+    if route not in manifest["routes"]:
         raise UsageError(f"no route {route} in this run; it has {', '.join(manifest['routes'])}")
     return a, b, route
 
@@ -290,7 +296,7 @@ def choose_clip(manifest: dict, versions_arg, routes_arg):
     if len(versions) < 2:
         raise UsageError(f"a clip needs two versions; run {manifest['run']!r} has {count}. "
                          "Save another with snap first.")
-    routes = [r.strip() for r in routes_arg.split(",")] if routes_arg else manifest["routes"][:1]
+    routes = [as_route(r.strip()) for r in routes_arg.split(",")] if routes_arg else manifest["routes"][:1]
     for route in routes:
         if route not in manifest["routes"]:
             raise UsageError(f"no route {route} in this run; it has {', '.join(manifest['routes'])}")
@@ -382,6 +388,7 @@ def cmd_clean(args) -> int:
     for wt in manifest["worktrees"]:
         if not is_wipe_worktree(wt):
             warn(f"left {wt} alone; Wipe only removes wipe-* folders in the temporary directory")
+            kept.append(wt)
             continue
         repo.remove_worktree(root, Path(wt))
         if Path(wt).exists():
@@ -393,8 +400,13 @@ def cmd_clean(args) -> int:
     if args.all and not kept:
         if folder.resolve().parent != (Path(root) / store.DIR).resolve():
             raise UsageError(f"refusing to delete {folder}: it is not a run folder inside {store.DIR}")
-        shutil.rmtree(folder, ignore_errors=True)
-        print(f"removed {store.DIR}/{manifest['run']}")
+        if folder.is_dir():
+            try:
+                shutil.rmtree(folder)
+            except OSError as e:
+                print(f"error: could not delete {store.DIR}/{manifest['run']}: {e}", file=sys.stderr)
+                return 1
+            print(f"removed {store.DIR}/{manifest['run']}")
     elif args.all:
         warn(f"kept {store.DIR}/{manifest['run']} because a worktree is still there")
         store.save_run(root, manifest)

@@ -105,6 +105,10 @@ class PageTests(support.TempProject):
         code, _, err = self.run_main("show", "--route", "/nope", "--run", "x", "--no-open")
         self.assertEqual(code, 2)
         self.assertIn("/nope", err)
+        code, _, err = self.run_main("show", "\u00b2", "1", "--run", "x", "--no-open")
+        self.assertEqual(code, 2)
+        self.assertNotIn("Traceback", err)
+        self.assertEqual(self.run_main("show", "--route", "pricing", "--run", "x", "--no-open")[0], 0)
 
     def test_embed_cli_default_out(self):
         self.make_run(2)

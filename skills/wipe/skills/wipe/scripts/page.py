@@ -53,12 +53,12 @@ def build_page(root: Path, manifest: dict, a: int | None = None, b: int | None =
     data = {"manifest": manifest, "sizes": _sizes(run, manifest), "a": a, "b": b,
             "route": route if route is not None else default_route(manifest, b)}
     # Insert user-controlled text last, so a placeholder inside a note is never substituted.
-    page = (PAGE.replace("__COMPONENT__", COMPONENT.read_text())
+    page = (PAGE.replace("__COMPONENT__", COMPONENT.read_text(encoding="utf-8"))
             .replace("__RUN__", html.escape(manifest["run"]))
             .replace("__DATA__", _script_json(data)))
     run.mkdir(parents=True, exist_ok=True)
     out = run / "index.html"
-    out.write_text(page)
+    out.write_text(page, encoding="utf-8")
     return out
 
 
@@ -79,7 +79,7 @@ def build_embed(root: Path, manifest: dict, a: int, b: int, route: str, out: Pat
         f'<before-after before="before.png" after="after.png" before-label="{la}" after-label="{lb}"\n'
         f'  position="50" aria-label="Compare {la} with {lb}"\n'
         f'  style="max-width:{width}px;border-radius:12px"></before-after>\n'
-        f'<script src="before-after.js"></script>\n')
+        f'<script src="before-after.js"></script>\n', encoding="utf-8")
     return snippet
 
 
