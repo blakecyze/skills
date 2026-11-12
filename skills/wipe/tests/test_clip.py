@@ -2,6 +2,7 @@ import importlib.util
 import io
 import os
 import shutil
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -171,6 +172,55 @@ class ClipCliTests(unittest.TestCase):
             code, _, err = self.run_main("clip", "--run", "x")
         self.assertEqual(code, 3)
         self.assertIn("venv", err)
+
+    def stub_ffmpeg(self, body):
+        """Put a fake ffmpeg alone on PATH."""
+        bin_dir = self.root / "stub-bin"
+        bin_dir.mkdir()
+        stub = bin_dir / "ffmpeg"
+        stub.write_text("#!/bin/sh\n" + body + "\n", encoding="utf-8")
+        stub.chmod(0o755)
+        return mock.patch.dict(os.environ, {"PATH": str(bin_dir)})
+
+    def assert_failed_cleanly(self, code, err):
+        self.assertEqual(code, 1)
+        self.assertIn("error:", err)
+        self.assertNotIn("Traceback", err)
+        run = store.run_dir(self.root, "x")
+        self.assertFalse((run / "clip.mp4").exists())
+        self.assertFalse((run / "clip.gif").exists())
+
+    @unittest.skipUnless(HAS_PIL, "needs Pillow")
+    def test_ffmpeg_failure_leaves_no_clip(self):
+        self.make_run(2)
+        # Writes a partial output (its last argument), then fails.
+        with self.stub_ffmpeg('for a; do last="$a"; done; echo partial > "$last"; exit 1'), \
+                mock.patch.object(clip, "FPS", 2):
+            code, _, err = self.run_main("clip", "--run", "x")
+        self.assert_failed_cleanly(code, err)
+        self.assertIn("ffmpeg failed making clip.mp4", err)
+
+    @unittest.skipUnless(HAS_PIL, "needs Pillow")
+    def test_compose_failure_kills_ffmpeg(self):
+        self.make_run(2)
+        procs = []
+        real_popen = subprocess.Popen
+
+        def popen(*args, **kwargs):
+            procs.append(real_popen(*args, **kwargs))
+            return procs[-1]
+
+        # The stub reads frames until stdin closes, then writes an output, as ffmpeg would.
+        with self.stub_ffmpeg('for a; do last="$a"; done; /bin/cat > "$last"'), \
+                mock.patch.object(clip, "FPS", 2), \
+                mock.patch.object(clip.subprocess, "Popen", side_effect=popen), \
+                mock.patch.object(clip, "compose", side_effect=[mock.DEFAULT, KeyError("boom")],
+                                  wraps=clip.compose):
+            code, _, err = self.run_main("clip", "--run", "x")
+        self.assert_failed_cleanly(code, err)
+        self.assertIn("KeyError", err)
+        self.assertEqual(len(procs), 1)
+        self.assertLess(procs[0].returncode, 0)  # Killed, and reaped (returncode is set).
 
     @unittest.skipUnless(HAS_PIL and HAS_FFMPEG, "needs Pillow and ffmpeg")
     def test_render_outputs(self):

@@ -324,22 +324,50 @@ def compose(frame: Frame, shots: dict, layout, fonts, notes: dict, outro: str | 
 
 # Encoding
 
-def _ffmpeg(args, stdin=None):
-    """Start ffmpeg quietly; its errors go to a temp file, read back by _finish."""
-    log = tempfile.TemporaryFile()
-    quiet = ["-y", "-loglevel", "error"] + (["-nostdin"] if stdin is None else [])
-    proc = subprocess.Popen(["ffmpeg", *quiet, *args], stdin=stdin, stdout=subprocess.DEVNULL, stderr=log)
-    return proc, log
+def _ffmpeg(args, what, feed=None):
+    """Run ffmpeg quietly, writing each chunk of feed to its stdin.
+
+    If anything goes wrong on our side (a frame fails to draw, Ctrl-C), ffmpeg is killed and
+    reaped, rather than left to finish a truncated file. A failure on ffmpeg's side raises ClipError
+    with the last line of its log.
+    """
+    with tempfile.TemporaryFile() as log:
+        quiet = ["-y", "-loglevel", "error"] + ([] if feed is not None else ["-nostdin"])
+        proc = subprocess.Popen(["ffmpeg", *quiet, *args], stdout=subprocess.DEVNULL, stderr=log,
+                                stdin=subprocess.PIPE if feed is not None else None)
+        try:
+            if feed is not None:
+                try:
+                    for chunk in feed:
+                        proc.stdin.write(chunk)
+                    proc.stdin.close()
+                except BrokenPipeError:
+                    pass  # ffmpeg stopped early; its exit code and log say why.
+            code = proc.wait()
+        except BaseException:
+            proc.kill()
+            proc.wait()
+            raise
+        finally:
+            if proc.stdin and not proc.stdin.closed:  # Unflushed bytes to a dead ffmpeg: ignore.
+                try:
+                    proc.stdin.close()
+                except OSError:
+                    pass
+        if code:
+            log.seek(0)
+            message = log.read().decode("utf-8", "replace").strip()
+            tail = message.splitlines()[-1] if message else f"exit code {code}"
+            raise ClipError(f"ffmpeg failed making {what}: {tail}")
 
 
-def _finish(proc, log, what):
-    code = proc.wait()
-    log.seek(0)
-    message = log.read().decode("utf-8", "replace").strip()
-    log.close()
-    if code:
-        tail = message.splitlines()[-1] if message else f"exit code {code}"
-        raise ClipError(f"ffmpeg failed making {what}: {tail}")
+def _frame_bytes(frames, shots, layout, fonts, notes, outro):
+    previous, data = None, b""
+    for frame in frames:
+        if frame != previous:  # Holds repeat a frame; draw it once.
+            data = compose(frame, shots, layout, fonts, notes, outro=outro).tobytes()
+            previous = frame
+        yield data
 
 
 def render(root, manifest: dict, versions: list, routes: list, out_dir: Path, ground: str, loop: bool,
@@ -360,24 +388,14 @@ def render(root, manifest: dict, versions: list, routes: list, out_dir: Path, gr
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     mp4, gif = out_dir / "clip.mp4", out_dir / "clip.gif"
-    proc, log = _ffmpeg(["-f", "rawvideo", "-pix_fmt", "rgb24", "-s", f"{layout.w}x{layout.h}", "-r", str(fps),
-                         "-i", "-", "-c:v", "libx264", "-pix_fmt", "yuv420p", "-crf", "16", "-preset", "slow",
-                         "-movflags", "+faststart", str(mp4)], stdin=subprocess.PIPE)
-    previous, data = None, b""
     try:
-        for frame in frames:
-            if frame != previous:  # Holds repeat a frame; draw it once.
-                data = compose(frame, shots, layout, fonts, notes, outro=outro_text).tobytes()
-                previous = frame
-            proc.stdin.write(data)
-    except BrokenPipeError:
-        pass  # ffmpeg stopped early; _finish reports why.
-    finally:
-        try:
-            proc.stdin.close()
-        except BrokenPipeError:
-            pass
-    _finish(proc, log, mp4.name)
-    proc, log = _ffmpeg(["-i", str(mp4), "-vf", GIF_FILTER.format(w=gif_width), "-loop", "0", str(gif)])
-    _finish(proc, log, gif.name)
+        _ffmpeg(["-f", "rawvideo", "-pix_fmt", "rgb24", "-s", f"{layout.w}x{layout.h}", "-r", str(fps),
+                 "-i", "-", "-c:v", "libx264", "-pix_fmt", "yuv420p", "-crf", "16", "-preset", "slow",
+                 "-movflags", "+faststart", str(mp4)], mp4.name,
+                feed=_frame_bytes(frames, shots, layout, fonts, notes, outro_text))
+        _ffmpeg(["-i", str(mp4), "-vf", GIF_FILTER.format(w=gif_width), "-loop", "0", str(gif)], gif.name)
+    except BaseException:
+        for f in (mp4, gif):  # Never leave a truncated clip that looks finished.
+            f.unlink(missing_ok=True)
+        raise
     return {"mp4": mp4, "gif": gif}

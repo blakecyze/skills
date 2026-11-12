@@ -286,6 +286,9 @@ def cmd_clip(args) -> int:
     except (clip.ClipError, OSError) as e:  # OSError: a capture missing or unreadable.
         print(f"error: {e}", file=sys.stderr)
         return 1
+    except Exception as e:  # A frame failed to draw; render has already stopped ffmpeg and removed the clip.
+        print(f"error: rendering failed, no clip was made: {type(e).__name__}: {e}", file=sys.stderr)
+        return 1
     for path in made.values():
         print(f"{path} ({path.stat().st_size / 1e6:.2f} MB)")
     size = made["gif"].stat().st_size / 1e6
