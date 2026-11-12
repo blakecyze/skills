@@ -133,6 +133,12 @@ class ReceiptTests(unittest.TestCase):
                          "versions were measured on different hosts")
         self.assertIsNone(clip.receipt_problem(self.manifest(far, dict(far, host="example.com:8443")), [0, 2]))
 
+    def test_receipt_one_sided_production(self):
+        prod = dict(self.A, production=True)
+        self.assertEqual(clip.receipt_problem(self.manifest(self.A, prod), [0, 2]),
+                         "only one version was marked as a production build")
+        self.assertIsNone(clip.receipt_problem(self.manifest(prod, prod), [0, 2]))
+
     def test_receipt_footer_production(self):
         self.assertEqual(clip.receipt_footer("example.com", True), "example.com · production build")
         self.assertEqual(clip.receipt_footer("localhost:3000", True), "localhost:3000 · production build")

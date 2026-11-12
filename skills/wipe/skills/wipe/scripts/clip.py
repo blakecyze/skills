@@ -317,6 +317,8 @@ def receipt_problem(manifest: dict, versions: list) -> str | None:
     first, last = (manifest["versions"][v]["measure"] for v in ends)
     if _hostname(first.get("host")) != _hostname(last.get("host")):
         return "versions were measured on different hosts"
+    if bool(first.get("production")) != bool(last.get("production")):
+        return "only one version was marked as a production build"
     return None
 
 

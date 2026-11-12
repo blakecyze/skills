@@ -8,7 +8,7 @@
       "assertions": [
         "Runs snap for /pricing with a note such as 'before' before making any edit to the code.",
         "Snaps once after each pass, with a note describing the change in the user's terms.",
-        "Passes the same route on every snap and reports each saved version label."
+        "Every snap captures /pricing (given or reused from the run) and reports each saved version label."
       ]
     },
     {
