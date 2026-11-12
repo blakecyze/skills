@@ -1,16 +1,11 @@
-import io
 import json
-import os
 import re
-import tempfile
 import unittest
-from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
 
-import support  # noqa: F401
+import support
 import page
 import store
-import wipe
 from pngs import write_png
 
 DATA = re.compile(r'<script type="application/json" id="wipe-data">(.*?)</script>', re.S)
@@ -20,15 +15,7 @@ def page_data(html: str) -> dict:
     return json.loads(DATA.search(html).group(1))
 
 
-class PageTests(unittest.TestCase):
-    def setUp(self):
-        self._tmp = tempfile.TemporaryDirectory()
-        self.addCleanup(self._tmp.cleanup)
-        self.root = Path(self._tmp.name).resolve()
-        cwd = Path.cwd()
-        os.chdir(self.root)
-        self.addCleanup(os.chdir, cwd)
-
+class PageTests(support.TempProject):
     def make_run(self, count, routes=("/pricing",), run="x"):
         m = store.load_run(self.root, run)
         for i in range(count):
@@ -37,12 +24,6 @@ class PageTests(unittest.TestCase):
             store.add_version(self.root, m, f"note {i} <b>&", images, "chrome", 2)
         store.save_run(self.root, m)
         return m
-
-    def run_main(self, *argv):
-        out, err = io.StringIO(), io.StringIO()
-        with redirect_stdout(out), redirect_stderr(err):
-            code = wipe.main(list(argv))
-        return code, out.getvalue(), err.getvalue()
 
     def test_page_references_versions(self):
         m = self.make_run(2)

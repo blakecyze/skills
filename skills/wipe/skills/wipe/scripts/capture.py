@@ -79,31 +79,31 @@ def _chrome_capture(url, out, viewport, theme, scale):
         raise CaptureError(f"Chrome produced no screenshot for {url}.")
 
 
+def _playwright_failed(url, error) -> CaptureError:
+    first = (str(error).strip().splitlines() or ["no message"])[0]
+    return CaptureError(f"Playwright failed for {url}: {first}")
+
+
 def _playwright_capture(url, out, viewport, theme, scale, full):
-    from playwright.sync_api import Error as PlaywrightError
-    try:
-        _playwright_capture_raw(url, out, viewport, theme, scale, full)
-    except PlaywrightError as e:
-        raise CaptureError(f"Playwright failed for {url}: {str(e).strip().splitlines()[0]}")
-
-
-def _playwright_capture_raw(url, out, viewport, theme, scale, full):
-    from playwright.sync_api import sync_playwright
+    from playwright.sync_api import Error, sync_playwright
     out = Path(out)
     out.parent.mkdir(parents=True, exist_ok=True)
     chrome = find_chrome(os.environ, sys.platform)
-    with sync_playwright() as p:
-        browser = p.chromium.launch(**({"executable_path": chrome} if chrome else {}))
-        try:
-            ctx = browser.new_context(viewport={"width": viewport[0], "height": viewport[1]},
-                                      device_scale_factor=scale, color_scheme=theme,
-                                      reduced_motion="reduce")
-            page = ctx.new_page()
-            page.goto(url, wait_until="networkidle")
-            page.evaluate("document.fonts.ready")
-            page.screenshot(path=str(out), full_page=full, animations="disabled")
-        finally:
-            browser.close()
+    try:
+        with sync_playwright() as p:
+            browser = p.chromium.launch(**({"executable_path": chrome} if chrome else {}))
+            try:
+                ctx = browser.new_context(viewport={"width": viewport[0], "height": viewport[1]},
+                                          device_scale_factor=scale, color_scheme=theme,
+                                          reduced_motion="reduce")
+                page = ctx.new_page()
+                page.goto(url, wait_until="networkidle")
+                page.evaluate("document.fonts.ready")
+                page.screenshot(path=str(out), full_page=full, animations="disabled")
+            finally:
+                browser.close()
+    except Error as e:
+        raise _playwright_failed(url, e)
 
 
 def capture(url: str, out: Path, viewport, theme, scale=2, method="auto", full=False) -> str:
@@ -122,15 +122,7 @@ def capture(url: str, out: Path, viewport, theme, scale=2, method="auto", full=F
 
 def measure(url: str, viewport, runs=3) -> dict:
     """Median transfer size, requests, DOM nodes and LCP over several loads. Needs Playwright."""
-    from playwright.sync_api import Error as PlaywrightError
-    try:
-        return _measure_raw(url, viewport, runs)
-    except PlaywrightError as e:
-        raise CaptureError(f"Playwright failed for {url}: {str(e).strip().splitlines()[0]}")
-
-
-def _measure_raw(url, viewport, runs):
-    from playwright.sync_api import sync_playwright
+    from playwright.sync_api import Error, sync_playwright
     script = """async () => {
       const lcp = await new Promise(res => {
         let v = 0;
@@ -147,18 +139,21 @@ def _measure_raw(url, viewport, runs):
               nodes: document.querySelectorAll('*').length, lcp};
     }"""
     samples = []
-    with sync_playwright() as p:
-        chrome = find_chrome(os.environ, sys.platform)
-        browser = p.chromium.launch(**({"executable_path": chrome} if chrome else {}))
-        try:
-            for _ in range(runs):
-                ctx = browser.new_context(viewport={"width": viewport[0], "height": viewport[1]})
-                page = ctx.new_page()
-                page.goto(url, wait_until="networkidle")
-                samples.append(page.evaluate(script))
-                ctx.close()
-        finally:
-            browser.close()
+    chrome = find_chrome(os.environ, sys.platform)
+    try:
+        with sync_playwright() as p:
+            browser = p.chromium.launch(**({"executable_path": chrome} if chrome else {}))
+            try:
+                for _ in range(runs):
+                    ctx = browser.new_context(viewport={"width": viewport[0], "height": viewport[1]})
+                    page = ctx.new_page()
+                    page.goto(url, wait_until="networkidle")
+                    samples.append(page.evaluate(script))
+                    ctx.close()
+            finally:
+                browser.close()
+    except Error as e:
+        raise _playwright_failed(url, e)
 
     def med(key):
         return statistics.median(s[key] for s in samples)

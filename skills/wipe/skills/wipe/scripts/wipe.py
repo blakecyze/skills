@@ -137,7 +137,7 @@ def cmd_snap(args) -> int:
         print("error: --measure needs --url", file=sys.stderr)
         return 2
 
-    images, method, measures = {}, None, {}
+    images, method, measure = {}, None, None
     with tempfile.TemporaryDirectory(prefix="wipe-snap-") as tmp:
         tmp = Path(tmp)
         if args.image:
@@ -166,10 +166,7 @@ def cmd_snap(args) -> int:
             scale = 2
             routes = args.routes or [r for r in manifest["routes"] if not r.endswith("@dark")] or ["/"]
             bare = routes == ["/"] and not args.routes  # one page at the URL as given, such as a file:// page
-            targets = []
-            for route in routes:
-                url = base_url if bare else base_url.rstrip("/") + route
-                targets.append((route, url))
+            targets = [(r, base_url if bare else base_url.rstrip("/") + r) for r in routes]
             used = set()
             try:
                 for route, url in targets:
@@ -180,11 +177,10 @@ def cmd_snap(args) -> int:
                                                  method=args.method, full=args.full))
                         images[key] = out
                 if args.measure:
-                    m = capture.measure(targets[0][1], viewport)
-                    m["route"] = targets[0][0]
+                    measure = capture.measure(targets[0][1], viewport)
+                    measure["route"] = targets[0][0]
                     if args.production:
-                        m["production"] = True
-                    measures = {"measure": m}
+                        measure["production"] = True
             except capture.CaptureError as e:
                 print(f"error: {e}", file=sys.stderr)
                 return 1
@@ -209,8 +205,7 @@ def cmd_snap(args) -> int:
             manifest["theme"] = theme_arg
         if args.url:
             manifest["base_url"] = args.url
-        version = store.add_version(root, manifest, args.note, images, method, scale,
-                                    measures.get("measure"))
+        version = store.add_version(root, manifest, args.note, images, method, scale, measure)
     store.save_run(root, manifest)
     print(f"{version['label']} saved in {store.DIR}/{run} ({method}, {len(images)} image(s))")
     return 0

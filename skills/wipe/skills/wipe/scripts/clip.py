@@ -363,7 +363,8 @@ def _receipt_card(frame, layout, fonts, receipt):
     x, y = (layout.w - cw) // 2, (layout.h - ch) // 2
     d.rounded_rectangle((x, y, x + cw, y + ch), layout.radius, fill=(255, 255, 255, round(14 * alpha / 255)),
                         outline=(255, 255, 255, round(22 * alpha / 255)), width=1)
-    ink = lambda c, a=255: tuple(c) + (round(a * alpha / 255),)  # noqa: E731
+    def ink(colour, a=255):
+        return tuple(colour) + (round(a * alpha / 255),)
     left, right = x + pad, x + cw - pad
     d.text((left, y + pad + 16), f"v{frame.a} \u2192 v{frame.b}", font=fonts.small, fill=ink(WHITE, 130), anchor="lm")
     top = y + pad + 70
@@ -373,15 +374,12 @@ def _receipt_card(frame, layout, fonts, receipt):
         colour = SAME if direction == 0 else (BETTER if direction < 0 else WORSE)
         d.text((left, cy), label, font=fonts.small, fill=ink(WHITE, 170), anchor="lm")
         tx = right - 12
-        if direction:  # Triangle: up for worse (higher), down for better (lower).
-            pts = [(tx - 12, cy + 9), (tx + 12, cy + 9), (tx, cy - 11)] if direction > 0 else \
-                  [(tx - 12, cy - 9), (tx + 12, cy - 9), (tx, cy + 11)]
+        if direction > 0:  # Up for worse (higher), down for better (lower), a dash for no change.
+            d.polygon([(tx - 12, cy + 9), (tx + 12, cy + 9), (tx, cy - 11)], fill=ink(colour))
+        elif direction < 0:
+            d.polygon([(tx - 12, cy - 9), (tx + 12, cy - 9), (tx, cy + 11)], fill=ink(colour))
         else:
-            pts = [(tx - 12, cy), (tx + 12, cy)]
-        if direction:
-            d.polygon(pts, fill=ink(colour))
-        else:
-            d.line(pts, fill=ink(colour), width=4)
+            d.line([(tx - 12, cy), (tx + 12, cy)], fill=ink(colour), width=4)
         ax = tx - 54
         d.text((ax, cy), after, font=fonts.row, fill=ink(WHITE), anchor="rm")
         after_w = d.textlength(after, font=fonts.row)
@@ -492,15 +490,14 @@ def render(root, manifest: dict, versions: list, routes: list, out_dir: Path, gr
     if receipt:
         first, last = (manifest["versions"][v]["measure"] for v in (versions[0], versions[-1]))
         card = receipt_card_data(first, last)
-    fps = FPS
-    frames = plan_frames(versions, routes, fps=fps, loop=loop, open_moving=open_moving,
+    frames = plan_frames(versions, routes, fps=FPS, loop=loop, open_moving=open_moving,
                          outro=outro_text is not None, receipt=receipt, scroll_routes=tall)
 
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     mp4, gif = out_dir / "clip.mp4", out_dir / "clip.gif"
     try:
-        _ffmpeg(["-f", "rawvideo", "-pix_fmt", "rgb24", "-s", f"{layout.w}x{layout.h}", "-r", str(fps),
+        _ffmpeg(["-f", "rawvideo", "-pix_fmt", "rgb24", "-s", f"{layout.w}x{layout.h}", "-r", str(FPS),
                  "-i", "-", "-c:v", "libx264", "-pix_fmt", "yuv420p", "-crf", "16", "-preset", "slow",
                  "-movflags", "+faststart", str(mp4)], mp4.name,
                 feed=_frame_bytes(frames, shots, layout, fonts, notes, outro_text, card))
