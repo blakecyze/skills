@@ -1,19 +1,16 @@
 import importlib.util
-import io
 import os
 import shutil
 import subprocess
 import sys
 import tempfile
 import unittest
-from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
 from unittest import mock
 
-import support  # noqa: F401
+import support
 import clip
 import store
-import wipe
 from pngs import write_png
 
 HAS_PIL = importlib.util.find_spec("PIL") is not None
@@ -205,15 +202,7 @@ class ComposeTests(unittest.TestCase):
         self.assertIn((0x3e, 0xcf, 0x8e), {c for _, c in img.getcolors(1 << 20)})
 
 
-class ClipCliTests(unittest.TestCase):
-    def setUp(self):
-        self._tmp = tempfile.TemporaryDirectory()
-        self.addCleanup(self._tmp.cleanup)
-        self.root = Path(self._tmp.name).resolve()
-        cwd = Path.cwd()
-        os.chdir(self.root)
-        self.addCleanup(os.chdir, cwd)
-
+class ClipCliTests(support.TempProject):
     def make_run(self, count, routes=("/",)):
         m = store.load_run(self.root, "x")
         for i in range(count):
@@ -222,12 +211,6 @@ class ClipCliTests(unittest.TestCase):
             store.add_version(self.root, m, f"pass {i}", images, "chrome", 2)
         store.save_run(self.root, m)
         return m
-
-    def run_main(self, *argv):
-        out, err = io.StringIO(), io.StringIO()
-        with redirect_stdout(out), redirect_stderr(err):
-            code = wipe.main(list(argv))
-        return code, out.getvalue(), err.getvalue()
 
     def test_clip_needs_two(self):
         self.make_run(1)

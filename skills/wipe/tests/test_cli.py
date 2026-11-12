@@ -1,35 +1,21 @@
-import io
 import json
 import subprocess
 import tempfile
 import unittest
-from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
 from unittest import mock
 
-import support  # noqa: F401
+import support
 import capture
 import store
 import wipe
 from pngs import write_png
 
 
-class SnapTests(unittest.TestCase):
+class SnapTests(support.TempProject):
     def setUp(self):
-        self._tmp = tempfile.TemporaryDirectory()
-        self.addCleanup(self._tmp.cleanup)
-        self.root = Path(self._tmp.name).resolve()
+        super().setUp()
         subprocess.run(["git", "init", "-q", "-b", "main"], cwd=self.root, check=True)
-        cwd = Path.cwd()
-        import os
-        os.chdir(self.root)
-        self.addCleanup(os.chdir, cwd)
-
-    def run_main(self, *argv):
-        out, err = io.StringIO(), io.StringIO()
-        with redirect_stdout(out), redirect_stderr(err):
-            code = wipe.main(list(argv))
-        return code, out.getvalue(), err.getvalue()
 
     def png(self, name, w=100, h=80):
         return str(write_png(self.root / name, w, h, (10, 20, 30)))
@@ -221,21 +207,15 @@ class SnapTests(unittest.TestCase):
         self.assertIn("venv", err)
 
 
-class HousekeepingTests(unittest.TestCase):
+class HousekeepingTests(support.TempProject):
     def setUp(self):
-        self._tmp = tempfile.TemporaryDirectory()
-        self.addCleanup(self._tmp.cleanup)
-        self.root = Path(self._tmp.name).resolve()
+        super().setUp()
         self.git("init", "-q", "-b", "main")
         for n in ("one", "two"):
             (self.root / "f.txt").write_text(n)
             self.git("add", "f.txt")
             self.git("-c", "user.name=wipe", "-c", "user.email=wipe@example.invalid",
                      "commit", "-q", "-m", n)
-        import os
-        cwd = Path.cwd()
-        os.chdir(self.root)
-        self.addCleanup(os.chdir, cwd)
         self.addCleanup(self.drop_worktrees)
         self._wt_tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self._wt_tmp.cleanup)
@@ -251,12 +231,6 @@ class HousekeepingTests(unittest.TestCase):
         import shutil
         for wt in store.load_run(self.root, "main")["worktrees"]:
             shutil.rmtree(wt, ignore_errors=True)
-
-    def run_main(self, *argv):
-        out, err = io.StringIO(), io.StringIO()
-        with redirect_stdout(out), redirect_stderr(err):
-            code = wipe.main(list(argv))
-        return code, out.getvalue(), err.getvalue()
 
     def snap(self, note):
         img = str(write_png(self.root / "x.png", 10, 10, (1, 2, 3)))
