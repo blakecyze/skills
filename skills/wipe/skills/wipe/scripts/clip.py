@@ -303,7 +303,7 @@ def receipt_rows(first: dict, last: dict) -> list:
         if a is None or b is None:
             continue
         delta = b - a
-        small = abs(delta) < 0.03 * abs(a) or (unit == "count" and abs(delta) < 1)
+        small = delta == 0 or abs(delta) < 0.03 * abs(a) or (unit == "count" and abs(delta) < 1)
         rows.append((label, _show(a, unit), _show(b, unit), 0 if small else (-1 if delta < 0 else 1)))
     return rows
 

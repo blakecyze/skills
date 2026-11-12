@@ -88,7 +88,6 @@ class TimelineTests(unittest.TestCase):
             clip.parse_hex("#12345")
 
 
-@unittest.skipUnless(HAS_PIL, "needs Pillow")
 class ReceiptTests(unittest.TestCase):
     A = {"transfer_kb": 420.0, "requests": 40, "dom_nodes": 900, "lcp_ms": 1200, "host": "localhost:3000", "runs": 3}
 
@@ -109,6 +108,13 @@ class ReceiptTests(unittest.TestCase):
         self.assertEqual((rows["Transfer"], rows["Requests"], rows["LCP"]), (0, -1, 0))
         self.assertEqual(clip.receipt_rows({"transfer_kb": 4.25}, {"transfer_kb": 3.1})[0][1:], ("4.2 KB", "3.1 KB", -1))
 
+    def test_receipt_zero_values(self):
+        rows = clip.receipt_rows({"transfer_kb": 0, "lcp_ms": 0, "requests": 0},
+                                 {"transfer_kb": 0, "lcp_ms": 0, "requests": 0})
+        self.assertEqual([r[3] for r in rows], [0, 0, 0])
+        rows = {r[0]: r[3] for r in clip.receipt_rows({"transfer_kb": 0, "lcp_ms": 0}, {"transfer_kb": 5, "lcp_ms": 100})}
+        self.assertEqual(rows, {"Transfer": 1, "LCP": 1})
+
     def test_receipt_missing_measure(self):
         problem = clip.receipt_problem(self.manifest(self.A, None), [0, 2])
         self.assertIn("v2", problem)
@@ -127,6 +133,7 @@ class ReceiptTests(unittest.TestCase):
         self.assertEqual(clip.receipt_footer("local file"), "local file")
 
 
+@unittest.skipUnless(HAS_PIL, "needs Pillow")
 class ComposeTests(unittest.TestCase):
     def test_compose_pads_shorter_shot(self):
         from PIL import Image
