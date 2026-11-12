@@ -135,5 +135,123 @@ class SnapTests(unittest.TestCase):
         self.assertIn("venv", err)
 
 
+class HousekeepingTests(unittest.TestCase):
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self._tmp.cleanup)
+        self.root = Path(self._tmp.name).resolve()
+        self.git("init", "-q", "-b", "main")
+        for n in ("one", "two"):
+            (self.root / "f.txt").write_text(n)
+            self.git("add", "f.txt")
+            self.git("-c", "user.name=wipe", "-c", "user.email=wipe@example.invalid",
+                     "commit", "-q", "-m", n)
+        import os
+        cwd = Path.cwd()
+        os.chdir(self.root)
+        self.addCleanup(os.chdir, cwd)
+        self.addCleanup(self.drop_worktrees)
+
+    def git(self, *args):
+        return subprocess.run(["git", *args], cwd=self.root, check=True, capture_output=True, text=True)
+
+    def drop_worktrees(self):
+        import shutil
+        for wt in store.load_run(self.root, "main")["worktrees"]:
+            shutil.rmtree(wt, ignore_errors=True)
+
+    def run_main(self, *argv):
+        out, err = io.StringIO(), io.StringIO()
+        with redirect_stdout(out), redirect_stderr(err):
+            code = wipe.main(list(argv))
+        return code, out.getvalue(), err.getvalue()
+
+    def snap(self, note):
+        img = str(write_png(self.root / "x.png", 10, 10, (1, 2, 3)))
+        self.assertEqual(self.run_main("snap", "--image", img, "--note", note)[0], 0)
+
+    def test_base_creates_worktree(self):
+        code, out, _ = self.run_main("base", "HEAD~1")
+        self.assertEqual(code, 0)
+        path = Path(out.strip())
+        self.assertTrue(path.is_dir())
+        self.assertTrue(path.name.startswith("wipe-main-"))
+        head = subprocess.run(["git", "rev-parse", "HEAD"], cwd=path, capture_output=True, text=True).stdout
+        self.assertEqual(head.strip(), self.git("rev-parse", "HEAD~1").stdout.strip())
+        self.assertEqual(store.load_run(self.root, "main")["worktrees"], [str(path)])
+
+    def test_base_twice_reuses(self):
+        _, first, _ = self.run_main("base", "HEAD~1")
+        code, second, _ = self.run_main("base", "HEAD~1")
+        self.assertEqual((code, second), (0, first))
+        self.assertEqual(len(store.load_run(self.root, "main")["worktrees"]), 1)
+
+    def test_base_unknown_ref(self):
+        code, _, err = self.run_main("base", "nope")
+        self.assertEqual(code, 2)
+        self.assertIn("nope", err)
+
+    def test_base_existing_unrecorded_path_is_usage_error(self):
+        path = Path(tempfile.gettempdir()) / "wipe-main-head-1"
+        path.mkdir()
+        self.addCleanup(path.rmdir)
+        code, _, err = self.run_main("base", "HEAD~1")
+        self.assertEqual(code, 2)
+        self.assertIn("exists", err)
+
+    def test_base_outside_git(self):
+        import os
+        with tempfile.TemporaryDirectory() as d:
+            os.chdir(Path(d).resolve())
+            code, _, err = self.run_main("base", "HEAD")
+        self.assertEqual(code, 2)
+        self.assertIn("git", err)
+        self.assertNotIn("Traceback", err)
+
+    def test_clean_removes(self):
+        _, out, _ = self.run_main("base", "HEAD~1")
+        path = Path(out.strip())
+        self.assertEqual(self.run_main("clean")[0], 0)
+        self.assertFalse(path.exists())
+        self.assertNotIn(path.name, self.git("worktree", "list").stdout)
+        self.assertEqual(store.load_run(self.root, "main")["worktrees"], [])
+
+    def test_clean_tolerates_hand_deleted_worktree(self):
+        import shutil
+        _, out, _ = self.run_main("base", "HEAD~1")
+        shutil.rmtree(out.strip())
+        self.assertEqual(self.run_main("clean")[0], 0)
+        self.assertEqual(store.load_run(self.root, "main")["worktrees"], [])
+        self.assertNotIn("wipe-main", self.git("worktree", "list").stdout)
+
+    def test_clean_all_deletes_run_only(self):
+        self.snap("a")
+        self.run_main("base", "HEAD~1")
+        (self.root / ".wipe" / "other").mkdir()
+        self.assertEqual(self.run_main("clean", "--all")[0], 0)
+        self.assertFalse((self.root / ".wipe" / "main").exists())
+        self.assertTrue((self.root / ".wipe" / "other").is_dir())
+        self.assertTrue((self.root / "f.txt").is_file())
+
+    def test_clean_with_nothing_is_ok(self):
+        self.assertEqual(self.run_main("clean")[0], 0)
+
+    def test_list_runs(self):
+        self.snap("before")
+        self.snap("after")
+        code, out, _ = self.run_main("list")
+        self.assertEqual(code, 0)
+        self.assertIn("main", out)
+        self.assertIn("2 versions", out)
+        self.assertIn("v0", out)
+        self.assertIn("after", out)
+
+    def test_list_singular_and_empty(self):
+        code, out, _ = self.run_main("list")
+        self.assertEqual((code, out.strip()), (0, "no runs yet"))
+        self.snap("only")
+        self.assertIn("1 version\n", self.run_main("list")[1])
+
+
 if __name__ == "__main__":
     unittest.main()
