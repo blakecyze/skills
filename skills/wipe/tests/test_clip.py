@@ -89,6 +89,44 @@ class TimelineTests(unittest.TestCase):
 
 
 @unittest.skipUnless(HAS_PIL, "needs Pillow")
+class ReceiptTests(unittest.TestCase):
+    A = {"transfer_kb": 420.0, "requests": 40, "dom_nodes": 900, "lcp_ms": 1200, "host": "localhost:3000", "runs": 3}
+
+    def manifest(self, first, last):
+        return {"versions": [{"measure": first}, {"measure": None}, {"measure": last}]}
+
+    def test_receipt_rows_direction(self):
+        b = dict(self.A, transfer_kb=310.0, dom_nodes=905, lcp_ms=1500, requests=40)
+        rows = {r[0]: r for r in clip.receipt_rows(self.A, b)}
+        self.assertEqual(rows["Transfer"][1:], ("420 KB", "310 KB", -1))
+        self.assertEqual(rows["DOM nodes"][3], 0)
+        self.assertEqual(rows["LCP"][1:], ("1200 ms", "1500 ms", 1))
+        self.assertEqual(rows["Requests"][3], 0)
+
+    def test_receipt_thresholds(self):
+        b = dict(self.A, transfer_kb=410.0, requests=38, lcp_ms=1230)
+        rows = {r[0]: r[3] for r in clip.receipt_rows(self.A, b)}
+        self.assertEqual((rows["Transfer"], rows["Requests"], rows["LCP"]), (0, -1, 0))
+        self.assertEqual(clip.receipt_rows({"transfer_kb": 4.25}, {"transfer_kb": 3.1})[0][1:], ("4.2 KB", "3.1 KB", -1))
+
+    def test_receipt_missing_measure(self):
+        problem = clip.receipt_problem(self.manifest(self.A, None), [0, 2])
+        self.assertIn("v2", problem)
+        self.assertIn("v0", clip.receipt_problem(self.manifest(None, self.A), [0, 2]))
+        self.assertIsNone(clip.receipt_problem(self.manifest(self.A, self.A), [0, 2]))
+
+    def test_receipt_host_mismatch(self):
+        problem = clip.receipt_problem(self.manifest(self.A, dict(self.A, host="example.com")), [0, 2])
+        self.assertEqual(problem, "versions were measured on different hosts")
+
+    def test_receipt_dev_label(self):
+        self.assertIn("dev server", clip.receipt_footer("localhost:3000"))
+        self.assertIn("dev server", clip.receipt_footer("127.0.0.1:8080"))
+        self.assertIn("dev server", clip.receipt_footer("app.local"))
+        self.assertNotIn("dev server", clip.receipt_footer("example.com"))
+        self.assertEqual(clip.receipt_footer("local file"), "local file")
+
+
 class ComposeTests(unittest.TestCase):
     def test_compose_pads_shorter_shot(self):
         from PIL import Image
@@ -112,6 +150,11 @@ class ComposeTests(unittest.TestCase):
                       clip.Frame("outro", "/", 0, 1, 0.5, 0.0), clip.Frame("receipt", "/", 0, 1, 0.5, 0.0)):
             img = clip.compose(frame, shots, layout, fonts, notes, outro="npx skills add")
             self.assertEqual(img.size, (1600, 900))
+        rows = clip.receipt_rows(ReceiptTests.A, dict(ReceiptTests.A, transfer_kb=310.0))
+        img = clip.compose(clip.Frame("receipt", "/", 0, 1, 1.0, 0.0), shots, layout, fonts, notes,
+                           receipt=(rows, "localhost:3000 \u00b7 dev server"))
+        self.assertEqual(img.size, (1600, 900))
+        self.assertIn((0x3e, 0xcf, 0x8e), {c for _, c in img.getcolors(1 << 20)})
 
 
 class ClipCliTests(unittest.TestCase):
@@ -221,6 +264,16 @@ class ClipCliTests(unittest.TestCase):
         self.assertIn("KeyError", err)
         self.assertEqual(len(procs), 1)
         self.assertLess(procs[0].returncode, 0)  # Killed, and reaped (returncode is set).
+
+    @unittest.skipUnless(HAS_PIL and HAS_FFMPEG, "needs Pillow and ffmpeg")
+    def test_receipt_problem_renders_without_card(self):
+        self.make_run(2)
+        with mock.patch.object(clip, "FPS", 4), mock.patch.object(clip, "plan_frames",
+                                                                  wraps=clip.plan_frames) as plan:
+            code, _, err = self.run_main("clip", "--run", "x", "--receipt", "--gif-width", "320")
+        self.assertEqual(code, 0, err)
+        self.assertIn("note: no receipt card: v0 has no measurements", err)
+        self.assertFalse(plan.call_args.kwargs["receipt"])
 
     @unittest.skipUnless(HAS_PIL and HAS_FFMPEG, "needs Pillow and ffmpeg")
     def test_render_outputs(self):

@@ -278,10 +278,16 @@ def cmd_clip(args) -> int:
     if not clip.has_pillow():
         print(f"error: clip {PILLOW_HELP}", file=sys.stderr)
         return 3
+    receipt = args.receipt
+    if receipt:
+        problem = clip.receipt_problem(manifest, versions)
+        if problem:
+            print(f"note: no receipt card: {problem}", file=sys.stderr)
+            receipt = False
     out = Path(args.out) if args.out else store.run_dir(root, manifest["run"])
     try:
         made = clip.render(root, manifest, versions, routes, out, args.ground, loop=not args.no_loop,
-                           open_moving=args.open_moving, outro_text=args.outro, receipt=args.receipt,
+                           open_moving=args.open_moving, outro_text=args.outro, receipt=receipt,
                            scroll=args.scroll, gif_width=args.gif_width)
     except (clip.ClipError, OSError) as e:  # OSError: a capture missing or unreadable.
         print(f"error: {e}", file=sys.stderr)

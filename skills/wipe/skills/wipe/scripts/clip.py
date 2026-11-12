@@ -18,7 +18,7 @@ import store
 
 Frame = namedtuple("Frame", "kind route a b p scroll")
 Layout = namedtuple("Layout", "w h x y win_w win_h radius ground base mask")
-Fonts = namedtuple("Fonts", "label ver note title")
+Fonts = namedtuple("Fonts", "label ver note title row small")
 
 W, H, FPS = 1600, 900, 30
 WIN_H, WIN_Y, RADIUS = 728, 44, 18
@@ -34,6 +34,10 @@ SCROLL_STEPS = ((0.4, 0, 0), (2.2, 0, 1), (0.8, 1, 1), (1.4, 1, 0), (0.4, 0, 0))
 
 LABEL_MIN = 230  # A side narrower than this hides its label.
 WHITE = (250, 248, 244)
+BETTER, WORSE, SAME = (0x3e, 0xcf, 0x8e), (0xff, 0x5a, 0x4f), (128, 128, 124)
+# Receipt metrics: manifest key, label, unit. Lower is better for all of them.
+METRICS = (("transfer_kb", "Transfer", "kb"), ("requests", "Requests", "count"),
+           ("dom_nodes", "DOM nodes", "count"), ("lcp_ms", "LCP", "ms"))
 GIF_FILTER = ("fps=12,scale={w}:-1:flags=lanczos,split[s0][s1];[s0]palettegen=stats_mode=diff:max_colors=160[p];"
               "[s1][p]paletteuse=dither=bayer:bayer_scale=4:diff_mode=rectangle")
 FONT_DIRS = (Path.home() / "Library/Fonts", Path("/Library/Fonts"), Path("/usr/share/fonts"))
@@ -184,7 +188,8 @@ def load_fonts():
 
     semi, medium = _font_files()
     return Fonts(label=get(semi, 15, "Semibold"), ver=get(semi, 14, "Semibold"),
-                 note=get(medium, 14, "Medium"), title=get(semi, 30, "Semibold"))
+                 note=get(medium, 14, "Medium"), title=get(semi, 30, "Semibold"),
+                 row=get(semi, 34, "Semibold"), small=get(medium, 24, "Medium"))
 
 
 def prepare_shots(images: dict, layout) -> dict:
@@ -280,24 +285,102 @@ def _outro_card(frame, layout, fonts, text):
     return img
 
 
-def _receipt_card(frame, layout, fonts):
-    """Placeholder card; the receipt's rows and rules come with the receipt feature."""
+def _show(value, unit):
+    if unit == "kb":
+        return f"{value:.1f} KB" if value < 10 else f"{value:.0f} KB"
+    return f"{value:.0f} ms" if unit == "ms" else f"{value:.0f}"
+
+
+def receipt_rows(first: dict, last: dict) -> list:
+    """(label, before text, after text, direction) per metric both versions have.
+
+    Direction is -1 for better, 0 for no change and 1 for worse; lower is better for every metric.
+    A change under 3% is no change, as is any change under 1 for counts.
+    """
+    rows = []
+    for key, label, unit in METRICS:
+        a, b = first.get(key), last.get(key)
+        if a is None or b is None:
+            continue
+        delta = b - a
+        small = abs(delta) < 0.03 * abs(a) or (unit == "count" and abs(delta) < 1)
+        rows.append((label, _show(a, unit), _show(b, unit), 0 if small else (-1 if delta < 0 else 1)))
+    return rows
+
+
+def receipt_problem(manifest: dict, versions: list) -> str | None:
+    """Why the first and last chosen versions can't be compared, or None if they can."""
+    ends = (versions[0], versions[-1])
+    for v in ends:
+        if not manifest["versions"][v].get("measure"):
+            return f"v{v} has no measurements; snap it with --measure to get a receipt"
+    first, last = (manifest["versions"][v]["measure"] for v in ends)
+    if first.get("host") != last.get("host"):
+        return "versions were measured on different hosts"
+    return None
+
+
+def receipt_footer(host: str) -> str:
+    name = host.rsplit(":", 1)[0] if re.search(r":\d+$", host) else host
+    dev = name in ("localhost", "127.0.0.1") or name.endswith(".local")
+    return f"{host} · dev server" if dev else host
+
+
+def _receipt_card(frame, layout, fonts, receipt):
+    """A centred card of metric rows: label, before to after, and a coloured direction triangle."""
     from PIL import Image, ImageDraw
     img = Image.new("RGB", (layout.w, layout.h), layout.ground)
+    rows, footer = receipt if receipt else ([], "")
+    alpha = round(255 * ease(min(1.0, frame.p / 0.2)))
     d = ImageDraw.Draw(img, "RGBA")
-    cw, ch = 640, 360
-    x, y = (layout.w - cw) / 2, (layout.h - ch) / 2
-    d.rounded_rectangle((x, y, x + cw, y + ch), layout.radius, fill=(255, 255, 255, 14))
-    d.text((layout.w / 2, y + 56), "Receipt", font=fonts.title, fill=WHITE, anchor="mm")
+    row_h, pad = 96, 52
+    cw = 960
+    ch = pad * 2 + 70 + row_h * len(rows) + (56 if footer else 0)
+    x, y = (layout.w - cw) // 2, (layout.h - ch) // 2
+    d.rounded_rectangle((x, y, x + cw, y + ch), layout.radius, fill=(255, 255, 255, round(14 * alpha / 255)),
+                        outline=(255, 255, 255, round(22 * alpha / 255)), width=1)
+    ink = lambda c, a=255: tuple(c) + (round(a * alpha / 255),)  # noqa: E731
+    left, right = x + pad, x + cw - pad
+    d.text((left, y + pad + 16), f"v{frame.a} \u2192 v{frame.b}", font=fonts.small, fill=ink(WHITE, 130), anchor="lm")
+    top = y + pad + 70
+    for i, (label, before, after, direction) in enumerate(rows):
+        cy = top + i * row_h + row_h // 2
+        d.line((left, top + i * row_h, right, top + i * row_h), fill=ink(WHITE, 24), width=1)
+        colour = SAME if direction == 0 else (BETTER if direction < 0 else WORSE)
+        d.text((left, cy), label, font=fonts.small, fill=ink(WHITE, 170), anchor="lm")
+        tx = right - 12
+        if direction:  # Triangle: up for worse (higher), down for better (lower).
+            pts = [(tx - 12, cy + 9), (tx + 12, cy + 9), (tx, cy - 11)] if direction > 0 else \
+                  [(tx - 12, cy - 9), (tx + 12, cy - 9), (tx, cy + 11)]
+        else:
+            pts = [(tx - 12, cy), (tx + 12, cy)]
+        if direction:
+            d.polygon(pts, fill=ink(colour))
+        else:
+            d.line(pts, fill=ink(colour), width=4)
+        ax = tx - 54
+        d.text((ax, cy), after, font=fonts.row, fill=ink(WHITE), anchor="rm")
+        after_w = d.textlength(after, font=fonts.row)
+        sx = ax - after_w - 30
+        d.line((sx - 22, cy, sx, cy), fill=ink(WHITE, 90), width=2)
+        d.line([(sx - 8, cy - 7), (sx, cy), (sx - 8, cy + 7)], fill=ink(WHITE, 90), width=2, joint="curve")
+        d.text((sx - 38, cy), before, font=fonts.row, fill=ink(WHITE, 110), anchor="rm")
+    if footer:
+        fy = top + len(rows) * row_h
+        d.line((left, fy, right, fy), fill=ink(WHITE, 24), width=1)
+        d.text((left, fy + 36), footer, font=fonts.small, fill=ink(WHITE, 100), anchor="lm")
     return img
 
 
-def compose(frame: Frame, shots: dict, layout, fonts, notes: dict, outro: str | None = None):
-    """One frame as a PIL image. notes maps each chosen version, in clip order, to its note."""
+def compose(frame: Frame, shots: dict, layout, fonts, notes: dict, outro: str | None = None,
+            receipt: tuple | None = None):
+    """One frame as a PIL image. notes maps each chosen version, in clip order, to its note.
+
+    receipt is (rows, footer) for receipt frames."""
     if frame.kind == "outro":
         return _outro_card(frame, layout, fonts, outro)
     if frame.kind == "receipt":
-        return _receipt_card(frame, layout, fonts)
+        return _receipt_card(frame, layout, fonts, receipt)
     from PIL import ImageDraw
     sa, sb = shots[(frame.a, frame.route)], shots[(frame.b, frame.route)]
     top = round(frame.scroll * (sa.height - layout.win_h))
@@ -361,11 +444,11 @@ def _ffmpeg(args, what, feed=None):
             raise ClipError(f"ffmpeg failed making {what}: {tail}")
 
 
-def _frame_bytes(frames, shots, layout, fonts, notes, outro):
+def _frame_bytes(frames, shots, layout, fonts, notes, outro, receipt=None):
     previous, data = None, b""
     for frame in frames:
         if frame != previous:  # Holds repeat a frame; draw it once.
-            data = compose(frame, shots, layout, fonts, notes, outro=outro).tobytes()
+            data = compose(frame, shots, layout, fonts, notes, outro=outro, receipt=receipt).tobytes()
             previous = frame
         yield data
 
@@ -381,6 +464,10 @@ def render(root, manifest: dict, versions: list, routes: list, out_dir: Path, gr
     shots = prepare_shots(images, layout)
     tall = {r for r in routes if shots[(versions[-1], r)].height > layout.win_h} if scroll else set()
     notes = {v: manifest["versions"][v].get("note") or "" for v in versions}
+    card = None
+    if receipt:
+        first, last = (manifest["versions"][v]["measure"] for v in (versions[0], versions[-1]))
+        card = (receipt_rows(first, last), receipt_footer(first.get("host") or ""))
     fps = FPS
     frames = plan_frames(versions, routes, fps=fps, loop=loop, open_moving=open_moving,
                          outro=outro_text is not None, receipt=receipt, scroll_routes=tall)
@@ -392,7 +479,7 @@ def render(root, manifest: dict, versions: list, routes: list, out_dir: Path, gr
         _ffmpeg(["-f", "rawvideo", "-pix_fmt", "rgb24", "-s", f"{layout.w}x{layout.h}", "-r", str(fps),
                  "-i", "-", "-c:v", "libx264", "-pix_fmt", "yuv420p", "-crf", "16", "-preset", "slow",
                  "-movflags", "+faststart", str(mp4)], mp4.name,
-                feed=_frame_bytes(frames, shots, layout, fonts, notes, outro_text))
+                feed=_frame_bytes(frames, shots, layout, fonts, notes, outro_text, card))
         _ffmpeg(["-i", str(mp4), "-vf", GIF_FILTER.format(w=gif_width), "-loop", "0", str(gif)], gif.name)
     except BaseException:
         for f in (mp4, gif):  # Never leave a truncated clip that looks finished.
