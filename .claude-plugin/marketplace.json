@@ -68,6 +68,13 @@
       "description": "Audit and art-direct how work is shown: product shots, thumbnails, cards, and heroes, with measured contrast and sets that do not look the same.",
       "category": "design",
       "tags": ["design", "product-shots", "thumbnails", "art-direction", "rendering"]
+    },
+    {
+      "name": "wipe",
+      "source": "./skills/wipe",
+      "description": "Keep every UI pass as a version, compare any two on a slider page, and render a before/after clip from the same captures.",
+      "category": "design",
+      "tags": ["design", "before-after", "iteration", "video"]
     }
   ]
 }

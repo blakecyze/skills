@@ -1,6 +1,6 @@
 # skills
 
-Nine skill libraries for AI coding agents: code, prose, orchestration, interface design, product delight, design research, QA, repo maps, and how work is shown.
+Ten skill libraries for AI coding agents: code, prose, orchestration, interface design, product delight, design research, QA, repo maps, how work is shown, and how it changed.
 
 Each library turns judgement into a concrete decision or check: which code to delete, what makes a sentence weak, whether an animation blocks the task, or what a design reference actually proves. They work in Claude Code, Cursor, Codex, and other agents that read skill files.
 
@@ -23,6 +23,7 @@ Or, in Claude Code, install any library as a plugin:
 /plugin install litmus@cyze
 /plugin install map@cyze
 /plugin install vitrine@cyze
+/plugin install wipe@cyze
 ```
 
 Each library also stands alone. Its own README covers tool-specific installers and configuration.
@@ -114,6 +115,14 @@ A git-ignored map of what search cannot answer, for agents working in the repo.
 |---|---|
 | [map](skills/map/skills/map/SKILL.md) | Build and refresh computed duplicates, one image register, the choices search gets wrong, and pages that know when they are stale |
 
+### [wipe](skills/wipe)
+
+Before and after. Keeps each UI pass as a version, compares any two on a slider page, and renders a clip from the same captures.
+
+| Skill | Purpose |
+|---|---|
+| [wipe](skills/wipe/skills/wipe/SKILL.md) | Snap versions as you iterate, compare them, and render a before/after GIF or MP4 |
+
 ## Layout
 
 ```
@@ -127,6 +136,7 @@ skills/
   litmus/     QA
   map/        repo context
   vitrine/    showing work
+  wipe/       before/after
 ```
 
 Each library is a complete Claude Code plugin with its own README, changelog, and licence. The standalone repos ([kanso](https://github.com/blakecyze/kanso), [mimesis](https://github.com/blakecyze/mimesis), [swarm](https://github.com/blakecyze/swarm)) remain live. This repo is the front door.
