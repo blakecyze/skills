@@ -105,6 +105,54 @@ class SnapTests(unittest.TestCase):
         self.assertEqual(m.call_args[0][0], "http://x.test/pricing")
         self.assertEqual(store.load_run(self.root, "main")["versions"][1]["measure"], {"requests": 1})
 
+    def test_snap_reuses_manifest_routes(self):
+        urls = []
+
+        def cap(url, out, *a, **k):
+            urls.append(url)
+            return self.fake_capture(url, out, *a, **k)
+
+        with mock.patch.object(capture, "capture", side_effect=cap):
+            self.run_main("snap", "/", "/pricing", "--url", "http://x.test", "--theme", "both", "--note", "a")
+            urls.clear()
+            self.assertEqual(self.run_main("snap", "--note", "b")[0], 0)
+        self.assertEqual(sorted(urls), ["http://x.test/", "http://x.test/", "http://x.test/pricing", "http://x.test/pricing"])
+        m = store.load_run(self.root, "main")
+        self.assertEqual(m["routes"], ["/", "/@dark", "/pricing", "/pricing@dark"])
+        self.assertEqual(sorted(m["versions"][1]["images"]), sorted(m["versions"][0]["images"]))
+
+    def test_snap_reuses_manifest_images_in_order(self):
+        self.run_main("snap", "/a", "/b", "--image", self.png("a.png"), "--image", self.png("b.png"), "--note", "a")
+        code, _, _ = self.run_main("snap", "--image", self.png("c.png"), "--image", self.png("d.png"), "--note", "b")
+        self.assertEqual(code, 0)
+        self.assertEqual(sorted(store.load_run(self.root, "main")["versions"][1]["images"]), ["/a", "/b"])
+
+    def test_snap_reuses_manifest_viewport(self):
+        seen = []
+
+        def cap(url, out, viewport, *a, **k):
+            seen.append(tuple(viewport))
+            return self.fake_capture(url, out, viewport, *a, **k)
+
+        with mock.patch.object(capture, "capture", side_effect=cap):
+            self.run_main("snap", "--url", "http://x.test", "--viewport", "390x844", "--note", "a")
+            self.run_main("snap", "--note", "b")
+        self.assertEqual(seen, [(390, 844), (390, 844)])
+
+    def test_production_flag_requires_measure(self):
+        code, _, err = self.run_main("snap", "--url", "http://x.test", "--production", "--note", "a")
+        self.assertEqual(code, 2)
+        self.assertIn("--measure", err)
+
+    def test_production_flag_is_stored(self):
+        with mock.patch.object(capture, "capture", side_effect=self.fake_capture), \
+                mock.patch.object(capture, "_has_playwright", return_value=True), \
+                mock.patch.object(capture, "measure", return_value={"requests": 1}):
+            code, _, _ = self.run_main("snap", "--url", "http://x.test", "--measure", "--production", "--note", "a")
+        self.assertEqual(code, 0)
+        self.assertEqual(store.load_run(self.root, "main")["versions"][0]["measure"],
+                         {"requests": 1, "production": True})
+
     def test_measure_without_any_url_is_usage_error(self):
         with mock.patch.object(capture, "_has_playwright", return_value=True):
             code, _, err = self.run_main("snap", "--measure", "--note", "a")
