@@ -4,6 +4,8 @@
 from __future__ import annotations
 
 import argparse
+import shutil
+import subprocess
 import sys
 import tempfile
 from pathlib import Path
@@ -11,11 +13,16 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import capture  # noqa: E402
+import page  # noqa: E402
 import repo  # noqa: E402
 import store  # noqa: E402
 
 PLAYWRIGHT_HELP = ("Needs Playwright. Run: python3 -m venv <temp>/v && <temp>/v/bin/pip install playwright, "
                    "then use <temp>/v/bin/python.")
+
+
+class UsageError(Exception):
+    """Bad arguments for this run. main prints it and exits 2."""
 
 
 def warn(text):
@@ -47,13 +54,26 @@ def build_parser():
     s.add_argument("--full", action="store_true", help="full-page capture (needs Playwright)")
     s.add_argument("--measure", action="store_true", help="record load metrics (needs Playwright)")
     s.add_argument("--method", choices=["auto", "playwright", "chrome"], default="auto")
+
+    s = sub.add_parser("show", help="build the compare page and open it")
+    s.add_argument("a", nargs="?", metavar="A", help="the before version, such as 0 or v0 (default: the second latest)")
+    s.add_argument("b", nargs="?", metavar="B", help="the after version (default: the latest)")
+    s.add_argument("--run", help="run name (default: current branch)")
+    s.add_argument("--route", help="route to show first (default: the first one)")
+    s.add_argument("--no-open", action="store_true", help="only print the page's path")
+
+    s = sub.add_parser("embed", help="write a standalone <before-after> snippet for two versions")
+    s.add_argument("a", metavar="A", help="the before version, such as 0 or v0")
+    s.add_argument("b", metavar="B", help="the after version")
+    s.add_argument("--run", help="run name (default: current branch)")
+    s.add_argument("--route", help="route to use (default: the first one)")
+    s.add_argument("--out", help="folder to write (default: .wipe/<run>/embed-vA-vB)")
     return p
 
 
 def cmd_snap(args) -> int:
-    root = repo.find_root(Path.cwd())
-    run = store.slug(args.run) if args.run else store.default_run(root)
-    manifest = store.load_run(root, run)
+    root, manifest = load(args)
+    run = manifest["run"]
     first = not manifest["versions"]
     viewport = args.viewport or (tuple(manifest["viewport"]) if manifest["viewport"] else (1280, 800))
     theme_arg = args.theme or manifest["theme"] or "light"
@@ -134,11 +154,79 @@ def cmd_snap(args) -> int:
     return 0
 
 
+def load(args):
+    """Project root and the manifest of the run named by --run (default: the current branch)."""
+    root = repo.find_root(Path.cwd())
+    run = store.slug(args.run) if args.run else store.default_run(root)
+    return root, store.load_run(root, run)
+
+
+def version_index(text: str, count: int) -> int:
+    t = text.lower()
+    t = t[1:] if t.startswith("v") else t
+    if not t.isdigit():
+        raise UsageError(f"a version is a number such as 2 or v2, not {text!r}")
+    if int(t) >= count:
+        raise UsageError(f"there is no v{int(t)}; this run has v0 to v{count - 1}")
+    return int(t)
+
+
+def choose(manifest: dict, a, b, route):
+    """Resolve A, B and the route from the arguments, or raise UsageError."""
+    versions = manifest["versions"]
+    if len(versions) < 2:
+        raise UsageError(f"comparing needs two versions; run {manifest['run']!r} has {len(versions)}. "
+                         "Save another with snap first.")
+    if a is None:
+        a, b = len(versions) - 2, len(versions) - 1
+    elif b is None:
+        raise UsageError("give two versions, such as 0 2, or none for the latest two")
+    else:
+        a, b = version_index(a, len(versions)), version_index(b, len(versions))
+    if a == b:
+        raise UsageError("pick two different versions")
+    if route is None:
+        route = page.default_route(manifest, b)
+    elif route not in manifest["routes"]:
+        raise UsageError(f"no route {route} in this run; it has {', '.join(manifest['routes'])}")
+    return a, b, route
+
+
+def open_file(path: Path) -> None:
+    opener = "open" if sys.platform == "darwin" else "xdg-open"
+    if shutil.which(opener):
+        subprocess.Popen([opener, str(path)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+
+def cmd_show(args) -> int:
+    root, manifest = load(args)
+    a, b, route = choose(manifest, args.a, args.b, args.route)
+    path = page.build_page(root, manifest, a, b, route)
+    print(path)
+    if not args.no_open:
+        open_file(path)
+    return 0
+
+
+def cmd_embed(args) -> int:
+    root, manifest = load(args)
+    a, b, route = choose(manifest, args.a, args.b, args.route)
+    for v in (a, b):
+        if route not in manifest["versions"][v]["images"]:
+            raise UsageError(f"v{v} has no capture of {route}")
+    out = Path(args.out) if args.out else store.run_dir(root, manifest["run"]) / f"embed-v{a}-v{b}"
+    print(page.build_embed(root, manifest, a, b, route, out))
+    return 0
+
+
 def main(argv=None) -> int:
     args = build_parser().parse_args(argv)
-    if args.cmd == "snap":
-        return cmd_snap(args)
-    return 2
+    commands = {"snap": cmd_snap, "show": cmd_show, "embed": cmd_embed}
+    try:
+        return commands[args.cmd](args)
+    except UsageError as e:
+        print(f"error: {e}", file=sys.stderr)
+        return 2
 
 
 if __name__ == "__main__":
