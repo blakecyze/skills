@@ -1,0 +1,126 @@
+import io
+import json
+import os
+import re
+import tempfile
+import unittest
+from contextlib import redirect_stderr, redirect_stdout
+from pathlib import Path
+
+import support  # noqa: F401
+import page
+import store
+import wipe
+from pngs import write_png
+
+DATA = re.compile(r'<script type="application/json" id="wipe-data">(.*?)</script>', re.S)
+
+
+def page_data(html: str) -> dict:
+    return json.loads(DATA.search(html).group(1))
+
+
+class PageTests(unittest.TestCase):
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self._tmp.cleanup)
+        self.root = Path(self._tmp.name).resolve()
+        cwd = Path.cwd()
+        os.chdir(self.root)
+        self.addCleanup(os.chdir, cwd)
+
+    def make_run(self, count, routes=("/pricing",), run="x"):
+        m = store.load_run(self.root, run)
+        for i in range(count):
+            images = {r: write_png(self.root / f"s{i}-{n}.png", 8, 6, (i * 40, 20, 30))
+                      for n, r in enumerate(routes)}
+            store.add_version(self.root, m, f"note {i} <b>&", images, "chrome", 2)
+        store.save_run(self.root, m)
+        return m
+
+    def run_main(self, *argv):
+        out, err = io.StringIO(), io.StringIO()
+        with redirect_stdout(out), redirect_stderr(err):
+            code = wipe.main(list(argv))
+        return code, out.getvalue(), err.getvalue()
+
+    def test_page_references_versions(self):
+        m = self.make_run(2)
+        path = page.build_page(self.root, m)
+        self.assertEqual(path, store.run_dir(self.root, "x") / "index.html")
+        html = path.read_text()
+        self.assertIn("v0/pricing.png", html)
+        self.assertIn("v1/pricing.png", html)
+        notes = [v["note"] for v in page_data(html)["manifest"]["versions"]]
+        self.assertEqual(notes, ["note 0 <b>&", "note 1 <b>&"])
+        self.assertNotIn("<b>", html)  # notes are escaped inside the JSON block
+
+    def test_page_inlines_component(self):
+        html = page.build_page(self.root, self.make_run(2)).read_text()
+        self.assertIn("customElements.define('before-after'", html)
+        self.assertNotIn('src="before-after.js"', html)
+
+    def test_component_small(self):
+        js = (Path(page.__file__).parent / "before-after.js").read_text()
+        js = re.sub(r"/\*.*?\*/", "", js, flags=re.S)
+        js = re.sub(r"^\s*//.*$", "", js, flags=re.M)
+        js = re.sub(r"\s+", " ", js).strip()
+        self.assertLess(len(js.encode()), 2048)
+
+    def test_page_lists_sizes_and_defaults(self):
+        m = self.make_run(3, routes=("/", "/about"))
+        data = page_data(page.build_page(self.root, m).read_text())
+        self.assertEqual((data["a"], data["b"], data["route"]), (1, 2, "/"))
+        self.assertEqual(data["sizes"]["v2/about.png"], [8, 6])
+
+    def test_embed_files(self):
+        m = self.make_run(3)
+        out = self.root / "embed"
+        snippet = page.build_embed(self.root, m, 0, 2, "/pricing", out)
+        self.assertEqual(snippet, out / "snippet.html")
+        for name in ("before.png", "after.png", "before-after.js", "snippet.html"):
+            self.assertTrue((out / name).is_file(), name)
+        self.assertEqual((out / "after.png").read_bytes(),
+                         (store.run_dir(self.root, "x") / "v2" / "pricing.png").read_bytes())
+        text = snippet.read_text()
+        for ref in ('"before.png"', '"after.png"', '"before-after.js"'):
+            self.assertIn(ref, text)
+        self.assertIn("v2 · note 2 &lt;b&gt;&amp;", text)
+
+    def test_show_needs_two(self):
+        self.make_run(1)
+        code, _, err = self.run_main("show", "--run", "x", "--no-open")
+        self.assertEqual(code, 2)
+        self.assertIn("two versions", err)
+        self.assertNotIn("Traceback", err)
+
+    def test_show_pair_selection(self):
+        self.make_run(3)
+        code, out, _ = self.run_main("show", "0", "v2", "--run", "x", "--no-open")
+        self.assertEqual(code, 0)
+        path = store.run_dir(self.root, "x") / "index.html"
+        self.assertIn(str(path), out)
+        data = page_data(path.read_text())
+        self.assertEqual((data["a"], data["b"]), (0, 2))
+
+    def test_show_rejects_bad_pairs(self):
+        self.make_run(2)
+        for argv in (["0"], ["0", "5"], ["1", "1"], ["0", "x"]):
+            code, _, err = self.run_main("show", *argv, "--run", "x", "--no-open")
+            self.assertEqual(code, 2, argv)
+            self.assertNotIn("Traceback", err)
+        code, _, err = self.run_main("show", "--route", "/nope", "--run", "x", "--no-open")
+        self.assertEqual(code, 2)
+        self.assertIn("/nope", err)
+
+    def test_embed_cli_default_out(self):
+        self.make_run(2)
+        code, out, _ = self.run_main("embed", "0", "1", "--run", "x")
+        self.assertEqual(code, 0)
+        snippet = store.run_dir(self.root, "x") / "embed-v0-v1" / "snippet.html"
+        self.assertTrue(snippet.is_file())
+        self.assertIn(str(snippet), out)
+
+
+if __name__ == "__main__":
+    unittest.main()
