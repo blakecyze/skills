@@ -1,6 +1,6 @@
 ---
 name: wipe
-description: "Use when a UI is being iterated over several passes and each pass should be kept, compared, or shown: \"wipe as we go\", \"snapshot this version\", \"compare before and after\", \"which pass was better\", \"show me what changed\", \"make a before/after GIF or video\". Works for web pages and for native app screenshots. Not for visual regression testing, pass/fail screenshot checks, or CI gating."
+description: "Use when a UI is being iterated over several passes and each pass should be kept, compared, or shown: \"wipe as we go\", \"snapshot this version\", \"compare before and after\", \"which pass was better\", \"show me what changed in the UI\", \"make a before/after GIF or video\". Works for web pages and for native app screenshots. Not for visual regression testing, pass/fail screenshot checks, or CI gating."
 argument-hint: "[snap|show|clip] [route…] [note]"
 ---
 
@@ -16,20 +16,20 @@ All optional. `snap` saves the current UI as the next version with the note. `sh
 
 ## Rules
 
-- **Baseline first.** When the user starts iterating with Wipe, snap v0 with the note `before` before the first edit. If edits already happened with no v0, the current state is not "before". Rebuild the pre-edit code instead: `base HEAD` when the edits are uncommitted, or the commit before the work (`base main`, `base HEAD~1`) when they are committed. Install and start that copy on a free port, snap it as v0 with `--url` pointing at it, stop that server, then snap the current state as v1 with `--url` back on the project's server.
+- **Baseline first.** When the user starts iterating with Wipe, snap v0 with the note `before` before the first edit. If edits already happened with no v0, the current state is not "before". Rebuild the pre-edit code instead: `base HEAD` when the edits are uncommitted, or the commit before the work (`base main`, `base HEAD~1`) when they are committed. Run `wipe.py` from the project's own folder, never from inside the base worktree, or the capture lands in a different run. Install and start that copy on a free port, started the same way the project's server runs (dev or build) when a receipt is wanted, snap it as v0 with `--url` pointing at it, stop that server, then snap the current state as v1 with `--url` back on the project's server.
 - **One version per pass.** After each pass that changes what the user sees, snap once. Write the note in the user's terms ("tightened card spacing"), never as a diff summary. Skip broken in-between states.
-- **Same conditions.** The first snap of a run fixes the viewport, theme, and routes. Later snaps reuse them and the last `--url`, so repeat none of them. Keep data, sign-in state, and scroll position the same too; Wipe cannot check those. If snap prints a `warning:`, tell the user the comparison is uneven and why, then fix it, usually by snapping again with matching settings.
+- **Same conditions.** The first snap of a run fixes the viewport, theme, and routes. Later snaps reuse them and the last `--url`, so repeat none of them. Keep data, sign-in state, and scroll position the same too; Wipe cannot check those. If snap prints a `warning:`, tell the user the comparison is uneven and why, then fix it, usually by snapping again with matching settings. To leave an uneven version out of a clip, pass `clip --versions`.
 - **Native apps.** Take the screenshot with the platform's own tool and pass the file with `--image`: `xcrun simctl io booted screenshot <temp>/s.png` for the iOS Simulator, `adb exec-out screencap -p > <temp>/s.png` for an Android emulator, or your own simulator tool. Use the same device and orientation every pass.
 - **Clean up.** Stop every server you started. Run `clean` once a `base` worktree is no longer needed. `.wipe/` is kept out of git through `.git/info/exclude`: never stage or commit it, and never edit `.gitignore` for it.
 
 ## Commands
 
-Run `python3 <skill>/scripts/wipe.py <command>` from inside the project, with `<skill>` resolved from this file's folder. Every command takes `--run <name>`; the default run is the current branch, or `default` outside git.
+Run `python3 <skill>/scripts/wipe.py <command>` from inside the project, with `<skill>` resolved from this file's folder. Every command except `list` takes `--run <name>`; the default run is the current branch, or `default` outside git.
 
 | Command | Does |
 |---|---|
-| `snap [routes] --note "<note>" --url <base>` | Captures `<base>` plus each route as the next version. With `--url` and no routes it captures that URL as given, which suits a `file://` page |
-| `snap [routes] --note "<note>" --image <png>` | Saves screenshots you already took, one `--image` per route in order. With no route the capture is called `screen` |
+| `snap [routes] --note "<note>" --url <base>` | Captures `<base>` plus each route as the next version. With no routes, later snaps reuse the run's routes against `<base>`; only a run with no routes captures `<base>` as given, which suits a `file://` page |
+| `snap [routes] --note "<note>" --image <png>` | Saves screenshots you already took, one `--image` per route in order. With no route and none saved in the run, the capture is called `screen` |
 | `show [A B] [--route R] [--no-open]` | Writes `.wipe/<run>/index.html` comparing A and B (default: the latest two), opens it, and prints its path. Modes: wipe, side by side, onion skin, diff |
 | `clip [--versions 0,2,3] [--routes /,/pricing]` | Writes `clip.mp4` and `clip.gif` to `.wipe/<run>/` or `--out`. Also `--receipt`, `--outro "<text>"`, `--open-moving`, `--scroll`, `--no-loop`, `--ground <hex>`, `--gif-width <px>` |
 | `embed A B [--route R] [--out <dir>]` | Writes a standalone before/after snippet for docs or a portfolio |
@@ -39,7 +39,7 @@ Run `python3 <skill>/scripts/wipe.py <command>` from inside the project, with `<
 
 More `snap` flags: `--viewport 1280x800` (the default), `--theme light|dark|both`, `--full` and `--measure` (both need Playwright), `--production` (with `--measure`, only when the user says the URL is a production build), `--method auto|playwright|chrome`.
 
-Exit codes: 0 done, 1 runtime error (read stderr), 2 bad command (fix it and rerun), 3 missing optional dependency. On 3, tell the user what was not made and why, pass on the install line from the error, and offer to install into a temporary venv. Never install anything globally without asking.
+Exit codes: 0 done, 1 runtime error (read stderr), 2 bad command (fix it and rerun), 3 missing optional dependency. On 3, tell the user what was not made and why, pass on the install line from the error, and offer to run the install line. Never install anything globally without asking.
 
 ## Report
 
