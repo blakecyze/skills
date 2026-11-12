@@ -64,6 +64,21 @@ class StoreTests(unittest.TestCase):
         store.ensure_excluded(self.root)
         self.assertEqual(list(self.root.iterdir()), [])
 
+    def test_missing_git_binary(self):
+        import os
+        old = os.environ["PATH"]
+        os.environ["PATH"] = str(self.root)
+        try:
+            self.assertEqual(repo.find_root(self.root), self.root)
+            self.assertFalse(repo.is_git(self.root))
+            self.assertIsNone(repo.current_branch(self.root))
+            self.assertEqual(repo.git_info(self.root), {"sha": None, "dirty": False})
+            self.assertEqual(store.default_run(self.root), "default")
+            store.ensure_excluded(self.root)
+        finally:
+            os.environ["PATH"] = old
+        self.assertEqual(list(self.root.iterdir()), [])
+
     def test_exclude_once(self):
         self.init_git()
         store.ensure_excluded(self.root)

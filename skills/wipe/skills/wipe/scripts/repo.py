@@ -7,8 +7,11 @@ from pathlib import Path
 
 
 def _git(root, *args):
-    return subprocess.run(["git", *args], cwd=str(root), check=False,
-                          capture_output=True, text=True)
+    try:
+        return subprocess.run(["git", *args], cwd=str(root), check=False,
+                              capture_output=True, text=True)
+    except OSError as e:  # git not installed: behave as "not a repo"
+        return subprocess.CompletedProcess(["git", *args], 127, "", str(e))
 
 
 def find_root(start: Path) -> Path:
