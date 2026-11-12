@@ -145,6 +145,27 @@ class ReceiptTests(unittest.TestCase):
         self.assertEqual(clip.receipt_footer("localhost:3000", False), "localhost:3000 · dev server")
         self.assertEqual(clip.receipt_footer("example.com", False), "example.com")
 
+    def test_receipt_route_must_be_in_clip(self):
+        a = dict(self.A, route="/pricing")
+        m = self.manifest(a, a)
+        self.assertIsNone(clip.receipt_problem(m, [0, 2], ["/", "/pricing"]))
+        self.assertEqual(clip.receipt_problem(m, [0, 2], ["/"]),
+                         "the receipt measured /pricing, which this clip doesn't show")
+        self.assertIsNone(clip.receipt_problem(self.manifest(self.A, self.A), [0, 2], ["/"]))
+
+    def test_receipt_footer_names_route_and_all_dev_hosts(self):
+        self.assertEqual(clip.receipt_footer("localhost:3000", False, "/pricing"),
+                         "/pricing · localhost:3000 · dev server")
+        for host in ("0.0.0.0:3000", "[::1]:3000", "::1", "0.0.0.0"):
+            self.assertIn("dev server", clip.receipt_footer(host), host)
+
+    def test_receipt_card_uses_last_version_host(self):
+        first = dict(self.A, host="localhost:49999", route="/")
+        last = dict(self.A, host="localhost:3000", route="/")
+        card = clip.receipt_card_data(first, last)
+        self.assertIn("localhost:3000", card[1])
+        self.assertNotIn("49999", card[1])
+
     def test_receipt_dev_label(self):
         self.assertIn("dev server", clip.receipt_footer("localhost:3000"))
         self.assertIn("dev server", clip.receipt_footer("127.0.0.1:8080"))

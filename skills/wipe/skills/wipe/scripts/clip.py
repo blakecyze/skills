@@ -308,7 +308,7 @@ def receipt_rows(first: dict, last: dict) -> list:
     return rows
 
 
-def receipt_problem(manifest: dict, versions: list) -> str | None:
+def receipt_problem(manifest: dict, versions: list, routes: list | None = None) -> str | None:
     """Why the first and last chosen versions can't be compared, or None if they can."""
     ends = (versions[0], versions[-1])
     for v in ends:
@@ -319,20 +319,35 @@ def receipt_problem(manifest: dict, versions: list) -> str | None:
         return "versions were measured on different hosts"
     if bool(first.get("production")) != bool(last.get("production")):
         return "only one version was marked as a production build"
+    measured = last.get("route")
+    if first.get("route") and measured and first["route"] != measured:
+        return "versions were measured on different routes"
+    if routes is not None and measured and measured not in routes:
+        return f"the receipt measured {measured}, which this clip doesn't show"
     return None
 
 
 def _hostname(host) -> str:
     host = host or ""
+    if host.count(":") > 1 and not host.startswith("["):  # a bare IPv6 address has no port to strip
+        return host
     return host.rsplit(":", 1)[0] if re.search(r":\d+$", host) else host
 
 
-def receipt_footer(host: str, production: bool = False) -> str:
-    name = _hostname(host)
+def receipt_footer(host: str, production: bool = False, route: str | None = None) -> str:
+    name = _hostname(host).strip("[]")
+    lead = f"{route} · {host}" if route else host
     if production:
-        return f"{host} · production build"
-    dev = name in ("localhost", "127.0.0.1") or name.endswith(".local")
-    return f"{host} · dev server" if dev else host
+        return f"{lead} · production build"
+    dev = name in ("localhost", "127.0.0.1", "0.0.0.0", "::1") or name.endswith(".local")
+    return f"{lead} · dev server" if dev else lead
+
+
+def receipt_card_data(first: dict, last: dict) -> tuple:
+    """(rows, footer) for the card. The footer names the last version's host: in a late start the
+    first version came from a temporary server on another port."""
+    production = bool(first.get("production") and last.get("production"))
+    return receipt_rows(first, last), receipt_footer(last.get("host") or "", production, last.get("route"))
 
 
 def _receipt_card(frame, layout, fonts, receipt):
@@ -476,7 +491,7 @@ def render(root, manifest: dict, versions: list, routes: list, out_dir: Path, gr
     card = None
     if receipt:
         first, last = (manifest["versions"][v]["measure"] for v in (versions[0], versions[-1]))
-        card = (receipt_rows(first, last), receipt_footer(first.get("host") or "", bool(first.get("production") and last.get("production"))))
+        card = receipt_card_data(first, last)
     fps = FPS
     frames = plan_frames(versions, routes, fps=fps, loop=loop, open_moving=open_moving,
                          outro=outro_text is not None, receipt=receipt, scroll_routes=tall)

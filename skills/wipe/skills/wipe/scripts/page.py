@@ -52,9 +52,10 @@ def build_page(root: Path, manifest: dict, a: int | None = None, b: int | None =
     b = max(n - 1, 0) if b is None else b
     data = {"manifest": manifest, "sizes": _sizes(run, manifest), "a": a, "b": b,
             "route": route if route is not None else default_route(manifest, b)}
-    page = (PAGE.replace("__RUN__", html.escape(manifest["run"]))
-            .replace("__DATA__", _script_json(data))
-            .replace("__COMPONENT__", COMPONENT.read_text()))
+    # Insert user-controlled text last, so a placeholder inside a note is never substituted.
+    page = (PAGE.replace("__COMPONENT__", COMPONENT.read_text())
+            .replace("__RUN__", html.escape(manifest["run"]))
+            .replace("__DATA__", _script_json(data)))
     run.mkdir(parents=True, exist_ok=True)
     out = run / "index.html"
     out.write_text(page)
