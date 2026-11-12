@@ -32,7 +32,7 @@ OUTRO, RECEIPT = 1.6, 2.4
 # A tall page on its last hold: still, pan down, still, pan back, still.
 SCROLL_STEPS = ((0.4, 0, 0), (2.2, 0, 1), (0.8, 1, 1), (1.4, 1, 0), (0.4, 0, 0))
 
-LABEL_MIN = 230  # A side narrower than this hides its label.
+LABEL_MIN = 360  # A side narrower than this hides its label.
 WHITE = (250, 248, 244)
 BETTER, WORSE, SAME = (0x3e, 0xcf, 0x8e), (0xff, 0x5a, 0x4f), (128, 128, 124)
 # Receipt metrics: manifest key, label, unit. Lower is better for all of them.
@@ -187,8 +187,8 @@ def load_fonts():
         return font
 
     semi, medium = _font_files()
-    return Fonts(label=get(semi, 15, "Semibold"), ver=get(semi, 14, "Semibold"),
-                 note=get(medium, 14, "Medium"), title=get(semi, 30, "Semibold"),
+    return Fonts(label=get(semi, 25, "Semibold"), ver=get(semi, 22, "Semibold"),
+                 note=get(medium, 22, "Medium"), title=get(semi, 30, "Semibold"),
                  row=get(semi, 34, "Semibold"), small=get(medium, 24, "Medium"))
 
 
@@ -230,16 +230,16 @@ def _label(v, notes):
 
 def _pill(d, x, y, text, font, right=False):
     """A dark label pill with its left edge (or right edge, if right) at x."""
-    w, h = _pill_width(d, text, font), 34
+    w, h = _pill_width(d, text, font), 52
     if right:
         x -= w
     d.rounded_rectangle((x, y, x + w, y + h), h // 2, fill=(20, 20, 18, 215))
-    d.text((x + 14, y + h / 2), text, font=font, fill=WHITE, anchor="lm")
+    d.text((x + 22, y + h / 2), text, font=font, fill=WHITE, anchor="lm")
 
 
 def _pill_width(d, text, font):
     l, _, r, _ = d.textbbox((0, 0), text, font=font)
-    return r - l + 28
+    return r - l + 44
 
 
 def _handle(d, x, layout):
@@ -256,11 +256,11 @@ def _handle(d, x, layout):
 
 def _strip(d, current, layout, fonts, notes):
     """The row of versions under the window, with the current one highlighted."""
-    sy = layout.y + layout.win_h + 46
+    sy = layout.y + layout.win_h + 62
     items = [(f"v{v}", _note(v, notes), v) for v in notes]
-    gap = 22
-    tags = [d.textlength(tag, font=fonts.ver) + 30 for tag, _, _ in items]
-    ws = [w + (8 + d.textlength(note, font=fonts.note) if note else 0) for w, (_, note, _) in zip(tags, items)]
+    gap = 28
+    tags = [d.textlength(tag, font=fonts.ver) + 44 for tag, _, _ in items]
+    ws = [w + (12 + d.textlength(note, font=fonts.note) if note else 0) for w, (_, note, _) in zip(tags, items)]
     with_notes = sum(ws) + gap * (len(items) - 1) <= layout.w - 80  # Too many to fit: tags only.
     if not with_notes:
         ws = tags
@@ -268,10 +268,10 @@ def _strip(d, current, layout, fonts, notes):
     for (tag, note, v), w in zip(items, ws):
         on = v == current
         if on:
-            d.rounded_rectangle((x, sy - 17, x + w, sy + 17), 17, fill=(255, 255, 255, 30))
-        d.text((x + 15, sy), tag, font=fonts.ver, fill=(255, 255, 255, 255 if on else 110), anchor="lm")
+            d.rounded_rectangle((x, sy - 24, x + w, sy + 24), 24, fill=(255, 255, 255, 30))
+        d.text((x + 22, sy), tag, font=fonts.ver, fill=(255, 255, 255, 255 if on else 110), anchor="lm")
         if with_notes and note:
-            d.text((x + 15 + d.textlength(tag, font=fonts.ver) + 8, sy), note, font=fonts.note,
+            d.text((x + 22 + d.textlength(tag, font=fonts.ver) + 12, sy), note, font=fonts.note,
                    fill=(255, 255, 255, 200 if on else 80), anchor="lm")
         x += w + gap
 
@@ -415,12 +415,12 @@ def compose(frame: Frame, shots: dict, layout, fonts, notes: dict, outro: str | 
     d = ImageDraw.Draw(img, "RGBA")
 
     # Labels sit in the bottom corners: the newer version left of the handle, the older right.
-    y = layout.y + layout.win_h - 52
+    y = layout.y + layout.win_h - 74
     left, right = _label(frame.b, notes), _label(frame.a, notes)
-    if hx > max(LABEL_MIN, _pill_width(d, left, fonts.label) + 36):
-        _pill(d, layout.x + 18, y, left, fonts.label)
-    if layout.win_w - hx > max(LABEL_MIN, _pill_width(d, right, fonts.label) + 36):
-        _pill(d, layout.x + layout.win_w - 18, y, right, fonts.label, right=True)
+    if hx > max(LABEL_MIN, _pill_width(d, left, fonts.label) + 44):
+        _pill(d, layout.x + 22, y, left, fonts.label)
+    if layout.win_w - hx > max(LABEL_MIN, _pill_width(d, right, fonts.label) + 44):
+        _pill(d, layout.x + layout.win_w - 22, y, right, fonts.label, right=True)
     if 0 < frame.p < 1:
         _handle(d, layout.x + hx, layout)
     _strip(d, frame.b if frame.p > 0.5 else frame.a, layout, fonts, notes)
