@@ -1,6 +1,7 @@
 import os
 import tempfile
 import unittest
+from unittest import mock
 from pathlib import Path
 
 import support  # noqa: F401
@@ -38,6 +39,33 @@ class ChromeCommandTests(unittest.TestCase):
         light, _ = self.cmd("light")
         self.assertIn(capture.DARK_FLAG, dark)
         self.assertNotIn(capture.DARK_FLAG, light)
+
+
+class PlaywrightErrorTests(unittest.TestCase):
+    def fake_playwright(self, raiser):
+        import sys
+        import types
+        pkg = types.ModuleType("playwright")
+        api = types.ModuleType("playwright.sync_api")
+
+        class Error(Exception):
+            pass
+
+        api.Error = Error
+        api.sync_playwright = lambda: raiser(Error)
+        pkg.sync_api = api
+        return mock.patch.dict(sys.modules, {"playwright": pkg, "playwright.sync_api": api})
+
+    def test_errors_become_capture_error(self):
+        def raiser(Error):
+            raise Error("Timeout 30000ms exceeded\nlong log")
+        with self.fake_playwright(raiser):
+            with self.assertRaises(capture.CaptureError) as c:
+                capture._playwright_capture("http://x.test", Path("/tmp/x.png"), (1, 1), "light", 2, False)
+            self.assertIn("Timeout", str(c.exception))
+            self.assertNotIn("long log", str(c.exception))
+            with self.assertRaises(capture.CaptureError):
+                capture.measure("http://x.test", (1, 1))
 
 
 if __name__ == "__main__":

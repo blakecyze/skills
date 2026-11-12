@@ -91,6 +91,43 @@ class SnapTests(unittest.TestCase):
         m = store.load_run(self.root, "main")
         self.assertEqual(m["routes"], ["/a", "/a@dark"])
 
+    def fake_capture(self, url, out, viewport, theme, scale=2, method="auto", full=False):
+        write_png(out, 20, 10, (1, 1, 1))
+        return "chrome"
+
+    def test_measure_reuses_saved_base_url(self):
+        with mock.patch.object(capture, "capture", side_effect=self.fake_capture):
+            self.assertEqual(self.run_main("snap", "/pricing", "--url", "http://x.test", "--note", "a")[0], 0)
+            with mock.patch.object(capture, "_has_playwright", return_value=True), \
+                    mock.patch.object(capture, "measure", return_value={"requests": 1}) as m:
+                code, _, _ = self.run_main("snap", "/pricing", "--measure", "--note", "b")
+        self.assertEqual(code, 0)
+        self.assertEqual(m.call_args[0][0], "http://x.test/pricing")
+        self.assertEqual(store.load_run(self.root, "main")["versions"][1]["measure"], {"requests": 1})
+
+    def test_measure_without_any_url_is_usage_error(self):
+        with mock.patch.object(capture, "_has_playwright", return_value=True):
+            code, _, err = self.run_main("snap", "--measure", "--note", "a")
+        self.assertEqual(code, 2)
+        self.assertIn("--url", err)
+
+    def test_playwright_errors_exit_1_without_traceback(self):
+        boom = capture.CaptureError("Playwright failed for http://x.test: Timeout")
+        base = ["snap", "--url", "http://x.test", "--note", "n"]
+        with mock.patch.object(capture, "_has_playwright", return_value=True), \
+                mock.patch.object(capture, "_playwright_capture", side_effect=boom):
+            code, _, err = self.run_main(*base, "--method", "playwright")
+        self.assertEqual(code, 1)
+        self.assertIn("error: Playwright failed", err)
+        self.assertNotIn("Traceback", err)
+        with mock.patch.object(capture, "_has_playwright", return_value=True), \
+                mock.patch.object(capture, "capture", side_effect=self.fake_capture), \
+                mock.patch.object(capture, "measure", side_effect=boom):
+            code, _, err = self.run_main(*base, "--measure")
+        self.assertEqual(code, 1)
+        self.assertIn("error: Playwright failed", err)
+        self.assertNotIn("Traceback", err)
+
     def test_measure_needs_playwright(self):
         with mock.patch.object(capture, "_has_playwright", return_value=False):
             code, _, err = self.run_main("snap", "--measure", "--url", "http://x.test", "--note", "n")

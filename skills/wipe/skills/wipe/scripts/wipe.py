@@ -65,11 +65,11 @@ def cmd_snap(args) -> int:
     if args.method == "playwright" and not capture._has_playwright():
         print(f"error: --method playwright {PLAYWRIGHT_HELP}", file=sys.stderr)
         return 3
-    if args.measure and not args.url:
+    base_url = args.url or manifest["base_url"]
+    if args.measure and not base_url:
         print("error: --measure needs --url", file=sys.stderr)
         return 2
 
-    base_url = args.url or manifest["base_url"]
     images, method, measures = {}, None, {}
     with tempfile.TemporaryDirectory(prefix="wipe-snap-") as tmp:
         tmp = Path(tmp)
